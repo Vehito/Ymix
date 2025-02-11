@@ -1,0 +1,33 @@
+name: ymix
+description: "A new Flutter project."
+
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  intl: ^0.20.2
+  fl_chart: ^0.70.2
+  provider: ^6.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Times New Roman
+      fonts:
+        - asset: assets\fonts\Times-New-Roman\times-new-roman-bold.ttf
+          weight: 700
+        - asset: assets\fonts\Times-New-Roman\times-new-roman.ttf

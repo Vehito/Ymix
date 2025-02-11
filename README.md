@@ -1,14 +1,14 @@
 # Niên luận Cơ sở/Chuyên ngành
 
-**Học kỳ**: X, **Năm học**: 20XX-20XX
+**Học kỳ**: 3, **Năm học**: 2024-2025
 
-**Mã học phần**: X
+**Mã học phần**: CT466
 
-**MSSV**: X
+**MSSV**: B2111856
 
-**Họ tên**: X
+**Họ tên**: Từ Phước Nguyên
 
-**Tên đề tài**: X
+**Tên đề tài**: Ứng dụng di động quản lý tài chính
 
 ---
 
