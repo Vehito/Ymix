@@ -1,5 +1,8 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:ymix/managers/transactions_manager.dart';
 
 import '../../models/transaction.dart';
 import './pie_chart.dart';
@@ -9,11 +12,15 @@ class SummarySlot extends StatelessWidget {
 
   final List<Transaction> transactions;
 
-  List<Indicator>? _indecators() {
-    List<Indicator> indicators = [];
-    transactions.forEach((transaction) => {
-      indicators.add(new Indicator(color: , text: text)),
-    });
+  Map<String, double> getIndicatorsData() {
+    Map<String, double> indicatorMap = {};
+
+    for (var transaction in transactions) {
+      indicatorMap[transaction.category] =
+          (indicatorMap[transaction.category] ?? 0) + transaction.amount;
+    }
+
+    return indicatorMap;
   }
 
   @override
@@ -45,8 +52,8 @@ class SummarySlot extends StatelessWidget {
               style: const TextStyle(fontSize: 25),
             ),
           ),
-          const Center(
-            child: PieChartSample2(),
+          Center(
+            child: PieChartSample(getIndicatorsData()),
           )
         ],
       ),

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 
 class TransactionsManager with ChangeNotifier {
-  final Map<String, Color> _color = {
+  static final Map<String, Color> color = {
     "entertainment": Colors.red,
   };
 
@@ -15,8 +15,28 @@ class TransactionsManager with ChangeNotifier {
       account: "main",
       category: "entertainment",
       dateTime: DateTime(2025, 10, 11),
-      tags: ['sex'],
+      tags: ['Xem phim'],
       comment: "aaa",
+    ),
+    Transaction(
+      id: "2",
+      amount: 344000,
+      currency: "VND",
+      account: "main",
+      category: "food",
+      dateTime: DateTime(2025, 10, 11),
+      // tags: ['Xem phim'],
+      // comment: "aaa",
+    ),
+    Transaction(
+      id: "3",
+      amount: 34000,
+      currency: "VND",
+      account: "main",
+      category: "travel",
+      dateTime: DateTime(2025, 10, 11),
+      // tags: ['Xem phim'],
+      // comment: "aaa",
     )
   ];
 
