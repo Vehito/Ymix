@@ -1,26 +1,38 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:ymix/managers/transactions_manager.dart';
 
 import '../../models/transaction.dart';
 import './pie_chart.dart';
 
-class SummarySlot extends StatelessWidget {
+import '../shared/dialog_utils.dart';
+
+class SummarySlot extends StatefulWidget {
   const SummarySlot(this.transactions, {super.key});
 
   final List<Transaction> transactions;
 
-  Map<String, double> getIndicatorsData() {
-    Map<String, double> indicatorMap = {};
+  @override
+  State<SummarySlot> createState() => _SummarySlotState();
+}
 
-    for (var transaction in transactions) {
+class _SummarySlotState extends State<SummarySlot> {
+  DateTime _chosenDate1 = DateTime.now();
+  DateTime? _chosenDate2;
+
+  Map<String, double> _getIndicatorsData() {
+    Map<String, double> indicatorMap = {};
+    for (var transaction in widget.transactions) {
       indicatorMap[transaction.category] =
           (indicatorMap[transaction.category] ?? 0) + transaction.amount;
     }
-
     return indicatorMap;
+  }
+
+  String _displayDate() {
+    if (_chosenDate2 != null) {
+      return ("From: ${DateFormat('dd/MM/yyyy').format(_chosenDate1)} - To: ${DateFormat('dd/MM/yyyy').format(_chosenDate2!)}");
+    }
+    return DateFormat('dd/MM/yyyy').format(_chosenDate1);
   }
 
   @override
@@ -34,29 +46,88 @@ class SummarySlot extends StatelessWidget {
       ),
       child: Column(
         children: [
+          ElevatedButton(onPressed: () {}, child: const Dropdown()),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              ElevatedButton(onPressed: () {}, child: const Dropdown()),
-              ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.timelapse),
-                label: const Text('Period'),
-              ),
+              _bulidDateForm(context),
+              _bulidPeriodForm(context),
             ],
           ),
           const SizedBox(height: 30),
           Center(
             child: Text(
-              DateFormat('dd/MM/yyyy').format(DateTime.now()),
-              style: const TextStyle(fontSize: 25),
+              _displayDate(),
+              style: const TextStyle(fontSize: 20),
             ),
           ),
           Center(
-            child: PieChartSample(getIndicatorsData()),
+            child: PieChartSample(_getIndicatorsData()),
           )
         ],
       ),
+    );
+  }
+
+  Widget _bulidDateForm(BuildContext context) {
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.calendar_month),
+      label: const Text("Choose date"),
+      onPressed: () async {
+        final currentDate = DateTime.now();
+        final selectedDate = await showDatePicker(
+          context: context,
+          initialDate: currentDate,
+          firstDate: DateTime(currentDate.year - 1),
+          lastDate: DateTime(currentDate.year + 1),
+        );
+        setState(() {
+          if (selectedDate != null) {
+            _chosenDate1 = selectedDate;
+          }
+        });
+      },
+    );
+  }
+
+  Widget _bulidPeriodForm(BuildContext context) {
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.timelapse),
+      label: const Text("Choose Period"),
+      onPressed: () async {
+        final currentDate = DateTime.now();
+        final selectedDate1 = await showDatePicker(
+          context: context,
+          helpText: "Choose the starting time",
+          initialDate: currentDate,
+          firstDate: DateTime(currentDate.year - 1),
+          lastDate: DateTime(currentDate.year + 1),
+        );
+        setState(() {
+          if (selectedDate1 != null) {
+            _chosenDate1 = selectedDate1;
+          }
+        });
+        if (context.mounted) {
+          final selectedDate2 = await showDatePicker(
+            context: context,
+            helpText: "Choose the end time",
+            initialDate: currentDate,
+            firstDate: DateTime(currentDate.year - 1),
+            lastDate: DateTime(currentDate.year + 1),
+            barrierLabel: "aaa",
+          );
+          setState(() {
+            if (selectedDate2 != null &&
+                selectedDate2.isAfter(selectedDate1!)) {
+              _chosenDate2 = selectedDate2;
+            } else {
+              _chosenDate2 = null;
+              showErrorDialog(context, "Invalid end time!");
+            }
+          });
+        }
+      },
     );
   }
 }
