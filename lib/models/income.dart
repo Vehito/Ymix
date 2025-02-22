@@ -1,25 +1,19 @@
-class Transaction {
-  final String? id;
-  final int amount;
-  final String currency;
-  final String account;
-  final String categoryId;
-  final DateTime dateTime;
-  final List<String>? tags;
-  final String? comment;
+import './transaction.dart';
 
-  Transaction({
-    this.id,
-    required this.amount,
-    required this.currency,
-    required this.account,
-    required this.categoryId,
-    required this.dateTime,
-    this.tags,
-    this.comment,
+class Income extends Transaction {
+  Income({
+    super.id,
+    required super.amount,
+    required super.currency,
+    required super.account,
+    required super.categoryId,
+    required super.dateTime,
+    super.tags,
+    super.comment,
   });
 
-  Transaction copyWith({
+  @override
+  Income copyWith({
     String? id,
     int? amount,
     String? currency,
@@ -29,7 +23,7 @@ class Transaction {
     List<String>? tags,
     String? comment,
   }) {
-    return Transaction(
+    return Income(
       id: id ?? this.id,
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,

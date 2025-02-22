@@ -1,6 +1,7 @@
-// import 'package:fl_chart/fl_chart.dart';
 import 'package:pie_chart/pie_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:ymix/managers/category_manager.dart';
 
 class PieChartSample extends StatefulWidget {
   const PieChartSample(this.indicatorsData, {super.key});
@@ -14,25 +15,36 @@ class PieChartSample extends StatefulWidget {
 class PieChart2State extends State<PieChartSample> {
   int touchedIndex = -1;
 
-  final Map<String, Color> categoryColors = {
-    "food": Colors.green,
-    "entertainment": Colors.red,
-    "travel": Colors.blue,
-    "shopping": Colors.purple,
-  };
-
   @override
   Widget build(BuildContext context) {
-    final colorList = widget.indicatorsData.keys
-        .map((category) => categoryColors[category] ?? Colors.grey)
-        .toList();
+    if (widget.indicatorsData.isEmpty) {
+      return Container(
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border(
+            bottom: BorderSide(width: 10.0),
+            top: BorderSide(width: 10.0),
+          ),
+        ),
+        constraints: const BoxConstraints.expand(width: 150, height: 150),
+        alignment: Alignment.center,
+        child: const Text("No transaction"),
+      );
+    }
+    List<Color> colorList = [];
+    final dataMap = Map.fromEntries(widget.indicatorsData.entries.map((entry) {
+      final category = context.read<CategoryManager>().getCategory(entry.key);
+      colorList.add(category.color);
+      return MapEntry(category.name, entry.value);
+    }));
     return PieChart(
-      dataMap: widget.indicatorsData,
+      dataMap: dataMap,
+      chartRadius: 150.0,
+      animationDuration: const Duration(seconds: 1),
       baseChartColor: Colors.grey[300]!,
       colorList: colorList,
-      chartValuesOptions: const ChartValuesOptions(
-        showChartValuesInPercentage: true,
-      ),
+      chartValuesOptions:
+          const ChartValuesOptions(showChartValuesInPercentage: true),
     );
   }
 }

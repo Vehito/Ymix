@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:ymix/managers/category_manager.dart';
+import 'package:ymix/managers/expenses_manager.dart';
+import 'package:ymix/managers/income_manager.dart';
 
 import './ui/screen.dart';
 
@@ -13,10 +16,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.cyan,
-      secondary: Colors.blueAccent,
+      seedColor: Colors.black,
+      primary: Colors.green.shade600,
+      secondary: Colors.blueGrey,
       surface: Colors.white,
-      surfaceTint: Colors.grey[200],
+      surfaceTint: Colors.white,
     );
 
     final themeData = ThemeData(
@@ -32,20 +36,20 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (ctx) => TransactionsManager(),
+          create: (ctx) => ExpensesManager(),
+        ),
+        ChangeNotifierProvider(
+          create: (ctx) => IncomeManager(),
+        ),
+        ChangeNotifierProvider(
+          create: (ctx) => CategoryManager(),
         )
       ],
       child: MaterialApp(
-        title: 'Flutter Demo',
-        debugShowCheckedModeBanner: false,
-        theme: themeData,
-        home: Scaffold(
-          appBar: AppBar(
-            title: const Text('Ymix'),
-          ),
-          body: const TransactionsScreen(),
-        ),
-      ),
+          title: 'Flutter Demo',
+          debugShowCheckedModeBanner: false,
+          theme: themeData,
+          home: const TransactionsScreen()),
     );
   }
 }
