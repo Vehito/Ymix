@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:ymix/managers/category_manager.dart';
 import 'package:ymix/managers/expenses_manager.dart';
 import 'package:ymix/managers/income_manager.dart';
+import 'package:ymix/managers/wallet_manager.dart';
 
 import './ui/screen.dart';
+
+import './ui/home.dart';
 
 void main() {
   runApp(const MyApp());
@@ -43,13 +46,21 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (ctx) => CategoryManager(),
-        )
+        ),
+        ChangeNotifierProvider(
+          create: (ctx) => WalletManager(),
+        ),
       ],
       child: MaterialApp(
-          title: 'Flutter Demo',
-          debugShowCheckedModeBanner: false,
-          theme: themeData,
-          home: const TransactionsScreen()),
+        title: 'Flutter Demo',
+        debugShowCheckedModeBanner: false,
+        theme: themeData,
+        initialRoute: "/",
+        routes: {
+          TransactionForm.routeName: (context) => const TransactionForm(null),
+        },
+        home: const Home(),
+      ),
     );
   }
 }

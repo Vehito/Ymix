@@ -1,43 +1,60 @@
 class Transaction {
-  final String? id;
-  final int amount;
-  final String currency;
-  final String account;
-  final String categoryId;
-  final DateTime dateTime;
-  final List<String>? tags;
-  final String? comment;
+  final String? _id;
+  final int _amount;
+  final String _currency;
+  final String _accountId;
+  final String _categoryId;
+  final DateTime _dateTime;
+  final List<String>? _tags;
+  final String? _comment;
 
   Transaction({
-    this.id,
-    required this.amount,
-    required this.currency,
-    required this.account,
-    required this.categoryId,
-    required this.dateTime,
-    this.tags,
-    this.comment,
-  });
+    String? id,
+    required int amount,
+    required String currency,
+    required String accountId,
+    required String categoryId,
+    required DateTime dateTime,
+    List<String>? tags,
+    String? comment,
+  })  : _id = id,
+        _amount = amount,
+        _currency = currency,
+        _accountId = accountId,
+        _categoryId = categoryId,
+        _dateTime = dateTime,
+        _tags = tags,
+        _comment = comment;
+
+  // Getters
+  String? get id => _id;
+  int get amount => _amount;
+  String get currency => _currency;
+  String get accountId => _accountId;
+  String get categoryId => _categoryId;
+  DateTime get dateTime => _dateTime;
+  List<String>? get tags => _tags;
+  String? get comment => _comment;
 
   Transaction copyWith({
     String? id,
     int? amount,
     String? currency,
-    String? account,
+    String? accountId,
     String? categoryId,
     DateTime? dateTime,
     List<String>? tags,
     String? comment,
   }) {
     return Transaction(
-      id: id ?? this.id,
-      amount: amount ?? this.amount,
-      currency: currency ?? this.currency,
-      account: account ?? this.account,
-      categoryId: categoryId ?? this.categoryId,
-      dateTime: dateTime ?? this.dateTime,
-      tags: tags ?? this.tags,
-      comment: comment ?? this.comment,
+      id: id ?? _id,
+      amount: amount ?? _amount,
+      currency: currency ?? _currency,
+      accountId: accountId ?? _accountId,
+      categoryId: categoryId ?? _categoryId,
+      dateTime: dateTime ?? _dateTime,
+      tags: tags ?? _tags,
+      comment: comment ?? _comment,
     );
   }
 }

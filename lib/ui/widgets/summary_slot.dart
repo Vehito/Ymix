@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:toggle_switch/toggle_switch.dart';
 import 'package:ymix/managers/expenses_manager.dart';
 import 'package:ymix/managers/income_manager.dart';
 import 'package:ymix/ui/widgets/transaction_list.dart';
@@ -9,12 +9,12 @@ import '../../models/transaction.dart';
 import './pie_chart.dart';
 
 import '../shared/dialog_utils.dart';
+import '../shared/format_helper.dart';
+
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 class SummarySlot extends StatefulWidget {
-  const SummarySlot(this.selectedMode, {super.key});
-
-  final int selectedMode; // 0 is expenses, 1 is income
+  const SummarySlot({super.key});
 
   @override
   State<SummarySlot> createState() => _SummarySlotState();
@@ -22,13 +22,14 @@ class SummarySlot extends StatefulWidget {
 
 class _SummarySlotState extends State<SummarySlot> {
   final DateTime _now = DateTime.now();
-  DateTime _chosenDate1 = DateTime.now();
+  late DateTime _chosenDate1;
   DateTime? _chosenDate2;
+  int selectedMode = 0; // 0 is expenses, 1 is income
 
   late List<Transaction> transactions;
 
   List<Transaction> _getTransactions() {
-    final manager = widget.selectedMode == 0
+    final manager = selectedMode == 0
         ? context.watch<ExpensesManager>()
         : context.watch<IncomeManager>();
     return _chosenDate2 == null
@@ -48,9 +49,15 @@ class _SummarySlotState extends State<SummarySlot> {
 
   String _displayDate() {
     if (_chosenDate2 != null) {
-      return ("From: ${DateFormat('dd/MM/yyyy').format(_chosenDate1)} - To: ${DateFormat('dd/MM/yyyy').format(_chosenDate2!)}");
+      return ("From: ${FormatHelper.dateFormat.format(_chosenDate1)} - To: ${FormatHelper.dateFormat.format(_chosenDate2!)}");
     }
-    return DateFormat('dd/MM/yyyy').format(_chosenDate1);
+    return FormatHelper.dateFormat.format(_chosenDate1);
+  }
+
+  @override
+  void initState() {
+    _chosenDate1 = _now;
+    super.initState();
   }
 
   @override
@@ -59,7 +66,7 @@ class _SummarySlotState extends State<SummarySlot> {
       slivers: <Widget>[
         SliverAppBar(
           pinned: true,
-          collapsedHeight: 200,
+          collapsedHeight: 300,
           backgroundColor: Colors.green.shade200,
           flexibleSpace: FlexibleSpaceBar(
             title: _bulidHeader(),
@@ -70,7 +77,7 @@ class _SummarySlotState extends State<SummarySlot> {
           child: Container(
               padding: const EdgeInsets.all(16),
               margin: const EdgeInsets.only(bottom: 30),
-              constraints: const BoxConstraints.expand(width: 250, height: 200),
+              constraints: const BoxConstraints.expand(width: 200, height: 200),
               decoration: const BoxDecoration(
                 borderRadius:
                     BorderRadius.vertical(bottom: Radius.circular(70)),
@@ -91,7 +98,23 @@ class _SummarySlotState extends State<SummarySlot> {
   Widget _bulidHeader() {
     return Column(
       children: [
-        const SizedBox(height: 30),
+        const SizedBox(height: 20),
+        ToggleSwitch(
+          animate: true,
+          animationDuration: 500,
+          centerText: true,
+          minWidth: 200,
+          initialLabelIndex: selectedMode, // Sử dụng biến trạng thái
+          labels: const ['Expenses', 'Income'],
+          activeBgColor: const [Colors.lightBlue],
+          icons: const [Icons.money_off, Icons.attach_money],
+          onToggle: (index) {
+            setState(() {
+              selectedMode = index!; // Cập nhật trạng thái
+            });
+          },
+        ),
+        const SizedBox(height: 20),
         Dropdown(const ["Day", "Week", "Month", "Year"], (selectedValue) {
           switch (selectedValue) {
             case "Day":
@@ -127,12 +150,22 @@ class _SummarySlotState extends State<SummarySlot> {
             _bulidPeriodForm(context),
           ],
         ),
-        const SizedBox(height: 30),
+        const SizedBox(height: 20),
         Text(
-          _displayDate(), 
+          _displayDate(),
           style: const TextStyle(
               fontSize: 20, color: Colors.black38, fontWeight: FontWeight.bold),
         ),
+        const SizedBox(height: 20),
+        Ink(
+          decoration: const ShapeDecoration(
+              shape: CircleBorder(), color: Colors.orangeAccent),
+          child: IconButton(
+            onPressed: () => Navigator.pushNamed(context, "/transaction_form"),
+            icon: const Icon(Icons.add),
+            color: Colors.white,
+          ),
+        )
       ],
     );
   }

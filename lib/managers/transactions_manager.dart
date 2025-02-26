@@ -11,8 +11,14 @@ abstract class TransactionsManager with ChangeNotifier {
 
   List<Transaction> getItemsWithDate(DateTime date) {
     return allItems
-        .where((item) => item.dateTime.isAtSameMomentAs(date))
+        .where((item) =>
+            item.dateTime.day == date.day &&
+            item.dateTime.month == date.month &&
+            item.dateTime.year == date.year)
         .toList();
+    // return allItems
+    // .where((item) => item.dateTime.isAtSameMomentAs(date))
+    // .toList();
   }
 
   List<Transaction> getItemsWithPeriod(DateTime start, DateTime end) {
@@ -21,4 +27,14 @@ abstract class TransactionsManager with ChangeNotifier {
             item.dateTime.isAfter(start) && item.dateTime.isBefore(end))
         .toList();
   }
+
+  void addTransaction(
+    int amount,
+    String currency,
+    String accountId,
+    String categoryId,
+    DateTime dateTime,
+    List<String>? tags,
+    String? comment,
+  );
 }

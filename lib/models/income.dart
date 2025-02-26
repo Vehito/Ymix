@@ -2,22 +2,31 @@ import './transaction.dart';
 
 class Income extends Transaction {
   Income({
-    super.id,
-    required super.amount,
-    required super.currency,
-    required super.account,
-    required super.categoryId,
-    required super.dateTime,
-    super.tags,
-    super.comment,
-  });
+    String? id,
+    required int amount,
+    required String currency,
+    required String accountId,
+    required String categoryId,
+    required DateTime dateTime,
+    List<String>? tags,
+    String? comment,
+  }) : super(
+          id: id,
+          amount: amount,
+          currency: currency,
+          accountId: accountId,
+          categoryId: categoryId,
+          dateTime: dateTime,
+          tags: tags,
+          comment: comment,
+        );
 
   @override
   Income copyWith({
     String? id,
     int? amount,
     String? currency,
-    String? account,
+    String? accountId,
     String? categoryId,
     DateTime? dateTime,
     List<String>? tags,
@@ -27,7 +36,7 @@ class Income extends Transaction {
       id: id ?? this.id,
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
-      account: account ?? this.account,
+      accountId: accountId ?? this.accountId,
       categoryId: categoryId ?? this.categoryId,
       dateTime: dateTime ?? this.dateTime,
       tags: tags ?? this.tags,

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:ymix/managers/category_manager.dart';
 import 'package:ymix/models/transaction.dart';
 import 'package:provider/provider.dart';
+
+import '../shared/format_helper.dart';
 
 class TransactionList extends StatelessWidget {
   const TransactionList(this.transactions, {super.key});
@@ -31,13 +32,14 @@ class TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final category =
         context.read<CategoryManager>().getCategory(transaction.categoryId);
-    final currencyFormat = NumberFormat("#,##0", "vi_VN");
+
     return Card(
       child: ListTile(
         minTileHeight: 20,
         leading: Icon(category.icon, color: category.color),
         title: Text(category.name.toUpperCase()),
-        subtitle: Text("${currencyFormat.format(transaction.amount)}đ"),
+        subtitle: Text(
+            "${FormatHelper.numberFormat.format(transaction.amount)}đ - ${FormatHelper.dateFormat.format(transaction.dateTime)}"),
         tileColor: category.color.withValues(alpha: 0.2),
         onTap: () => print("hahaah"),
       ),

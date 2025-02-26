@@ -19,6 +19,7 @@ dependencies:
   pie_chart: ^5.4.0
   dropdown_button2: ^2.3.9
   toggle_switch: ^2.3.0
+  choice: ^2.3.2
 
 dev_dependencies:
   flutter_test:
