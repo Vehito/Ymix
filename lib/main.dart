@@ -4,6 +4,7 @@ import 'package:ymix/managers/category_manager.dart';
 import 'package:ymix/managers/expenses_manager.dart';
 import 'package:ymix/managers/income_manager.dart';
 import 'package:ymix/managers/wallet_manager.dart';
+import 'package:ymix/models/transaction.dart';
 
 import './ui/screen.dart';
 
@@ -45,7 +46,7 @@ class MyApp extends StatelessWidget {
           create: (ctx) => IncomeManager(),
         ),
         ChangeNotifierProvider(
-          create: (ctx) => CategoryManager(),
+          create: (ctx) => CategoryManager.instance,
         ),
         ChangeNotifierProvider(
           create: (ctx) => WalletManager(),
@@ -56,8 +57,25 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: themeData,
         initialRoute: "/",
-        routes: {
-          TransactionForm.routeName: (context) => const TransactionForm(null),
+        // routes: {
+        //   TransactionForm.routeName: (context) => const TransactionForm(null),
+        // },
+        onGenerateRoute: (settings) {
+          //Transaction Form
+          if (settings.name == TransactionForm.routeName) {
+            final transaction = settings.arguments as Transaction?;
+            return MaterialPageRoute(
+                builder: (context) => TransactionForm(transaction));
+          }
+          //Transaction Detail
+          else if (settings.name == TransactionDetail.routeName) {
+            final transaction = settings.arguments as Transaction;
+            return MaterialPageRoute(
+                builder: (context) => TransactionDetail(transaction.id!));
+          }
+
+          assert(false, 'Need to implement ${settings.name}');
+          return null;
         },
         home: const Home(),
       ),

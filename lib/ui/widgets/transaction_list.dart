@@ -5,23 +5,23 @@ import 'package:provider/provider.dart';
 
 import '../shared/format_helper.dart';
 
-class TransactionList extends StatelessWidget {
-  const TransactionList(this.transactions, {super.key});
+// class TransactionList extends StatelessWidget {
+//   const TransactionList(this.transactions, {super.key});
 
-  final List<Transaction> transactions;
+//   final List<Transaction> transactions;
 
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: transactions.length,
-      padding: const EdgeInsets.only(bottom: 20.0),
-      shrinkWrap: true,
-      itemBuilder: (context, index) {
-        return TransactionTile(transactions[index]);
-      },
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return ListView.builder(
+//       itemCount: transactions.length,
+//       padding: const EdgeInsets.only(bottom: 20.0),
+//       shrinkWrap: true,
+//       itemBuilder: (context, index) {
+//         return TransactionTile(transactions[index]);
+//       },
+//     );
+//   }
+// }
 
 class TransactionTile extends StatelessWidget {
   const TransactionTile(this.transaction, {super.key});
@@ -41,7 +41,9 @@ class TransactionTile extends StatelessWidget {
         subtitle: Text(
             "${FormatHelper.numberFormat.format(transaction.amount)}đ - ${FormatHelper.dateFormat.format(transaction.dateTime)}"),
         tileColor: category.color.withValues(alpha: 0.2),
-        onTap: () => print("hahaah"),
+        // onTap: () => Navigator.pushNamed(context, TransactionDetail.routeName,
+        //         arguments: transaction)
+        //     .then((_) => onTap),
       ),
     );
   }

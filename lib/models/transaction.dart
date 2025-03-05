@@ -1,8 +1,8 @@
 class Transaction {
   final String? _id;
-  final int _amount;
+  final double _amount;
   final String _currency;
-  final String _accountId;
+  final String _walletId;
   final String _categoryId;
   final DateTime _dateTime;
   final List<String>? _tags;
@@ -10,9 +10,9 @@ class Transaction {
 
   Transaction({
     String? id,
-    required int amount,
+    required double amount,
     required String currency,
-    required String accountId,
+    required String walletId,
     required String categoryId,
     required DateTime dateTime,
     List<String>? tags,
@@ -20,7 +20,7 @@ class Transaction {
   })  : _id = id,
         _amount = amount,
         _currency = currency,
-        _accountId = accountId,
+        _walletId = walletId,
         _categoryId = categoryId,
         _dateTime = dateTime,
         _tags = tags,
@@ -28,9 +28,9 @@ class Transaction {
 
   // Getters
   String? get id => _id;
-  int get amount => _amount;
+  double get amount => _amount;
   String get currency => _currency;
-  String get accountId => _accountId;
+  String get walletId => _walletId;
   String get categoryId => _categoryId;
   DateTime get dateTime => _dateTime;
   List<String>? get tags => _tags;
@@ -38,9 +38,9 @@ class Transaction {
 
   Transaction copyWith({
     String? id,
-    int? amount,
+    double? amount,
     String? currency,
-    String? accountId,
+    String? walletId,
     String? categoryId,
     DateTime? dateTime,
     List<String>? tags,
@@ -50,7 +50,7 @@ class Transaction {
       id: id ?? _id,
       amount: amount ?? _amount,
       currency: currency ?? _currency,
-      accountId: accountId ?? _accountId,
+      walletId: walletId ?? _walletId,
       categoryId: categoryId ?? _categoryId,
       dateTime: dateTime ?? _dateTime,
       tags: tags ?? _tags,

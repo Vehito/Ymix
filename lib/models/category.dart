@@ -34,4 +34,30 @@ class Category {
       icon: icon ?? _icon,
     );
   }
+
+  String _doubleToHex(double value) =>
+      (value * 255).round().toRadixString(16).padLeft(2, '0');
+
+  int _colorToHex(Color color) {
+    return int.parse(
+        '${_doubleToHex(color.a)}'
+        '${_doubleToHex(color.r)}'
+        '${_doubleToHex(color.g)}'
+        '${_doubleToHex(color.b)}',
+        radix: 16);
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': _id,
+        'name': _name,
+        'color': _colorToHex(_color),
+        'icon': _icon.codePoint,
+      };
+
+  factory Category.formJson(Map<String, dynamic> json) => Category(
+        id: json['id'],
+        name: json['name'],
+        color: Color(json['color']),
+        icon: IconData(json['icon'], fontFamily: "MaterialIcons"),
+      );
 }

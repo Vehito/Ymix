@@ -4,42 +4,42 @@ import 'package:ymix/managers/transactions_manager.dart';
 import 'package:ymix/models/transaction.dart';
 
 class IncomeManager extends TransactionsManager {
-  final List<Income> _items = [
+  final List<Income> _incomes = [
     Income(
-      id: "1",
+      id: "i1",
       amount: 24000,
       currency: "VND",
-      accountId: "main",
+      walletId: "1",
       categoryId: "1",
       dateTime: DateTime(2025, 10, 12),
       tags: ['Xem phim'],
       comment: "aaa",
     ),
     Income(
-      id: "2",
+      id: "i2",
       amount: 344000,
       currency: "VND",
-      accountId: "main",
+      walletId: "2",
       categoryId: "2",
       dateTime: DateTime(2025, 10, 15),
       // tags: ['Xem phim'],
       // comment: "aaa",
     ),
     Income(
-      id: "3",
+      id: "i3",
       amount: 34000,
       currency: "VND",
-      accountId: "main",
+      walletId: "3",
       categoryId: "3",
       dateTime: DateTime(2025, 2, 20),
       // tags: ['Xem phim'],
       // comment: "aaa",
     ),
     Income(
-      id: "4",
+      id: "i4",
       amount: 34000,
       currency: "VND",
-      accountId: "main",
+      walletId: "2",
       categoryId: "2",
       dateTime: DateTime(2025, 2, 11),
       // tags: ['Xem phim'],
@@ -48,24 +48,35 @@ class IncomeManager extends TransactionsManager {
   ];
 
   @override
-  List<Transaction> get allItems => _items;
+  List<Transaction> get transactions => _incomes;
 
   @override
   void addTransaction(
-    int amount,
+    double amount,
     String currency,
-    String accountId,
+    String walletId,
     String categoryId,
     DateTime dateTime,
     List<String>? tags,
     String? comment,
   ) {
-    allItems.add(Income(
+    transactions.add(Income(
+      id: "i${DateTime.now().toIso8601String()}",
       amount: amount,
       currency: currency,
-      accountId: accountId,
+      walletId: walletId,
       categoryId: categoryId,
       dateTime: dateTime,
     ));
+  }
+
+  @override
+  Income getTransactionWithId(String id) {
+    return _incomes.firstWhere((income) => income.id! == id);
+  }
+
+  @override
+  void deleteTransaction(String id) {
+    _incomes.remove(_incomes.firstWhere((income) => income.id == id));
   }
 }
