@@ -1,67 +1,78 @@
 import 'package:flutter/material.dart';
+import 'package:ymix/managers/wallet_manager.dart';
+import 'package:ymix/services/transaction_service.dart';
 
-import '../models/transaction.dart';
+import '../models/transactions.dart';
 
-abstract class TransactionsManager with ChangeNotifier {
-  List<Transaction> get transactions;
+class TransactionsManager with ChangeNotifier {
+  final TransactionService _transactionService = TransactionService.instance;
+
+  List<Transactions> transactions = [];
 
   int get itemCount {
     return transactions.length;
   }
 
-  List<Transaction> getItemsWithDate(DateTime date) {
-    return transactions
-        .where((transaction) =>
-            transaction.dateTime.day == date.day &&
-            transaction.dateTime.month == date.month &&
-            transaction.dateTime.year == date.year)
-        .toList();
-    // return transactions
-    // .where((transaction) => transaction.dateTime.isAtSameMomentAs(date))
-    // .toList();
+  Future<List<Transactions>> getTransactionsInDay(
+      DateTime dateTime, bool isExpense) async {
+    return await _transactionService.fetchTransactionsInDay(
+        dateTime, isExpense);
   }
 
-  List<Transaction> getItemsWithPeriod(DateTime start, DateTime end) {
-    return transactions
-        .where((transaction) =>
-            transaction.dateTime.isAfter(start) &&
-            transaction.dateTime.isBefore(end))
-        .toList();
+  Future<List<Transactions>> getTransactionInPeriod(
+      DateTime start, DateTime end, bool isExpense) async {
+    return _transactionService.fetchTransactionsInPeriod(start, end, isExpense);
   }
 
-  Transaction getTransactionWithId(String id);
+  Future<Transactions?> getTransactionWithId(String id) async {
+    return await _transactionService.fetchTransactionById(id);
+  }
 
-  void addTransaction(
-    double amount,
-    String currency,
-    String walletId,
-    String categoryId,
-    DateTime dateTime,
-    List<String>? tags,
-    String? comment,
-  );
+  Future<List<Transactions>> getTransactionListWithId(
+      List<String> idList) async {
+    final List<Transactions> transactions = [];
+    for (var id in idList) {
+      transactions.add((await _transactionService.fetchTransactionById(id))!);
+    }
+    return transactions;
+  }
 
-  void editTransaction({
-    required String id,
-    double? amount,
-    String? currency,
-    String? walletId,
-    String? categoryId,
-    DateTime? dateTime,
-    List<String>? tags,
-    String? comment,
-  }) {
-    var index = transactions.indexWhere((transaction) => transaction.id == id);
-    transactions[index] = transactions[index].copyWith(
-        id: null,
+  Future<List<Transactions>> getTransactionsByCategoryId(String id) async {
+    return await _transactionService.fetchTransactionByCategoryId(id);
+  }
+
+  Future<void> addTransaction(
+      double amount,
+      String currencySymbol,
+      String walletId,
+      String categoryId,
+      DateTime dateTime,
+      List<String>? tags,
+      String? comment,
+      bool isExpense) async {
+    final transaction = Transactions(
         amount: amount,
-        currency: currency,
+        currencySymbol: currencySymbol,
         walletId: walletId,
         categoryId: categoryId,
-        dateTime: dateTime,
-        tags: tags,
-        comment: comment);
+        dateTime: dateTime);
+    final walletManager = WalletManager.instance;
+    final wallet = await walletManager.getWalletById(transaction.walletId);
+    if (wallet == null || wallet.balance < transaction.amount) return;
+
+    await _transactionService.addTransaction(transaction, isExpense);
+    await walletManager.editWallet(
+        id: transaction.walletId,
+        balance: (wallet.balance - transaction.amount));
+    notifyListeners();
   }
 
-  void deleteTransaction(String id);
+  Future<void> updateTransaction(Transactions transaction) async {
+    await _transactionService.updateTransaction(transaction);
+    notifyListeners();
+  }
+
+  Future<void> deleteTransaction(String id) async {
+    
+  }
 }

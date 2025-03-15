@@ -45,7 +45,7 @@ Widget buildDateTimeForm(
 Widget buildToggleSwitch(int selectedMode, ValueChanged<int> onModeSaved) {
   return ToggleSwitch(
     animate: true,
-    animationDuration: 500,
+    animationDuration: 200,
     centerText: true,
     minWidth: 200,
     initialLabelIndex: selectedMode, // Sử dụng biến trạng thái
@@ -56,103 +56,68 @@ Widget buildToggleSwitch(int selectedMode, ValueChanged<int> onModeSaved) {
   );
 }
 
-Widget buildAmountForm(
-    double? amount, Color formColor, ValueChanged<double> onAmountSaved) {
-  TextEditingController controller = TextEditingController(
-    text: amount == null ? '' : amount.toString(),
-  );
-  List<double> suggestedValues = [];
-  return StatefulBuilder(
-    builder: (context, setState) {
-      void onValueChanged(String newValue) {
-        if (newValue.isNotEmpty && double.tryParse(newValue) != null) {
-          double baseAmount = double.parse(newValue);
-          setState(() {
-            suggestedValues = [
-              baseAmount * 10,
-              baseAmount * 100,
-              baseAmount * 1000,
-            ];
-          });
-        } else {
-          setState(() {
-            suggestedValues = [];
-          });
-        }
-      }
-
-      return Column(
-        children: [
-          Card(
-            color: formColor,
-            child: TextFormField(
-              controller: controller,
-              autovalidateMode: AutovalidateMode.onUnfocus,
-              keyboardType: TextInputType.number,
-              onSaved: (newValue) => onAmountSaved(double.parse(newValue!)),
-              onChanged: (newValue) => onValueChanged(newValue),
-              decoration: const InputDecoration(
-                hintText: 'Enter amount',
-                icon: Icon(Icons.attach_money_outlined),
-                labelText: 'Amount *',
+Widget buildAmountForm(double? amount, String? title, Color formColor,
+    ValueChanged<double> onAmountSaved,
+    {ValueChanged<double>? onValueChanged,
+    TextEditingController? controller,
+    int? decimalDigits}) {
+  return Column(
+    children: [
+      Card(
+        color: formColor,
+        child: TextFormField(
+          controller: controller ??
+              TextEditingController(
+                text: amount == null
+                    ? '0'
+                    : decimalDigits == null
+                        ? amount.toString()
+                        : amount.toStringAsFixed(decimalDigits),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'This field is required';
-                }
-                if (double.tryParse(value) == null ||
-                    double.tryParse(value) == 0) {
-                  return 'Invalid amount';
-                }
-                if (value.length != value.replaceAll(' ', '').length) {
-                  return 'Amount must not contain any spaces';
-                }
-                if (double.tryParse(value)! < 0) {
-                  return "Amount can not be negative";
-                }
+          autovalidateMode: AutovalidateMode.onUnfocus,
+          keyboardType: TextInputType.number,
+          onSaved: (newValue) => onAmountSaved(double.parse(newValue!)),
+          onChanged: (newValue) {
+            if (onValueChanged != null) {
+              onValueChanged(double.parse(newValue));
+            }
+          },
+          decoration: InputDecoration(
+            hintText: 'Enter ${title ?? 'amount'}',
+            icon: const Icon(Icons.attach_money_outlined),
+            labelText: title ?? 'Amount *',
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'This field is required';
+            }
+            if (double.tryParse(value) == null || double.tryParse(value) == 0) {
+              return 'Invalid amount';
+            }
+            if (value.length != value.replaceAll(' ', '').length) {
+              return 'Amount must not contain any spaces';
+            }
+            if (double.tryParse(value)! < 0) {
+              return "Amount can not be negative";
+            }
 
-                return null;
-              },
-            ),
-          ),
-          // if (suggestedValues.isNotEmpty)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: suggestedValues.map((value) {
-              return ElevatedButton(
-                onPressed: () {
-                  controller.text = value.toString();
-                  setState(() {});
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white38,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                ),
-                child: Text(
-                  FormatHelper.numberFormat.format(value),
-                  style: const TextStyle(fontSize: 12, color: Colors.black45),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      );
-    },
+            return null;
+          },
+        ),
+      ),
+    ],
   );
 }
 
 Widget buildPromptedChoiceForm(
-    List<dynamic> listItem,
+    List<dynamic>? listItem,
     String? itemId,
     String? selectedItemName,
     String titleListTile,
     Color? formColor,
     Color? dividerColor,
-    ValueChanged<String> onValueSaved) {
+    ValueChanged<String> onValueSaved,
+    Function(String? value)? validator) {
   return FormField<String>(
     initialValue: itemId,
     autovalidateMode: AutovalidateMode.always,
@@ -161,6 +126,7 @@ Widget buildPromptedChoiceForm(
       if (value == null || value.isEmpty) {
         return 'This field is required';
       }
+      if (validator != null) return validator(value);
       return null;
     },
     builder: (field) => Card(
@@ -178,7 +144,7 @@ Widget buildPromptedChoiceForm(
             title: 'Choose one',
             value: selectedItemName,
             onChanged: (value) => field.didChange(value),
-            itemCount: listItem.length,
+            itemCount: listItem!.length,
             itemBuilder: (state, i) {
               return RadioListTile(
                 value: listItem[i].name,
@@ -188,7 +154,7 @@ Widget buildPromptedChoiceForm(
                   selectedItemName = listItem[i].name;
                 },
                 title: ChoiceText(
-                  listItem[i].name,
+                  '${listItem[i].name} - ${listItem[i].balance ?? ''}đ',
                   highlight: state.search?.value,
                 ),
               );
@@ -309,16 +275,19 @@ Widget buildValidatorContainer(String? errorText, String successfulText) {
 }
 
 Widget buildTextForm(String? text, String titleForm, Color formColor,
-    ValueChanged<String> onTextSaved) {
+    ValueChanged<String> onTextSaved,
+    {bool isTextArea = false}) {
   return Card(
     color: formColor,
     child: TextFormField(
       initialValue: text ?? '',
+      maxLines: isTextArea ? 3 : null,
+      keyboardType: TextInputType.multiline,
       autovalidateMode: AutovalidateMode.onUnfocus,
       onSaved: (newValue) => onTextSaved(newValue!),
       decoration: InputDecoration(
         hintText: 'Enter your $titleForm',
-        icon: const Icon(Icons.attach_money_outlined),
+        icon: const Icon(Icons.text_fields),
         labelText: titleForm,
       ),
       maxLength: 100,

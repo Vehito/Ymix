@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:ymix/managers/category_manager.dart';
-import 'package:ymix/managers/expenses_manager.dart';
-import 'package:ymix/managers/income_manager.dart';
-import 'package:ymix/managers/wallet_manager.dart';
-import 'package:ymix/models/transaction.dart';
+
+import 'package:ymix/models/transactions.dart';
+import 'package:ymix/models/wallet.dart';
 
 import './ui/screen.dart';
+import './managers/managers.dart';
 
 import './ui/home.dart';
 
@@ -24,7 +23,6 @@ class MyApp extends StatelessWidget {
       primary: Colors.green.shade600,
       secondary: Colors.blueGrey,
       surface: Colors.white,
-      surfaceTint: Colors.white,
     );
 
     final themeData = ThemeData(
@@ -40,16 +38,22 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
+          create: (ctx) => TransactionsManager(),
+        ),
+        ChangeNotifierProvider(
           create: (ctx) => ExpensesManager(),
         ),
         ChangeNotifierProvider(
-          create: (ctx) => IncomeManager(),
+          create: (ctx) => IncomeManager.instance,
         ),
         ChangeNotifierProvider(
           create: (ctx) => CategoryManager.instance,
         ),
         ChangeNotifierProvider(
-          create: (ctx) => WalletManager(),
+          create: (ctx) => WalletManager.instance,
+        ),
+        ChangeNotifierProvider(
+          create: (ctx) => CurrencyManager.instance,
         ),
       ],
       child: MaterialApp(
@@ -63,15 +67,32 @@ class MyApp extends StatelessWidget {
         onGenerateRoute: (settings) {
           //Transaction Form
           if (settings.name == TransactionForm.routeName) {
-            final transaction = settings.arguments as Transaction?;
+            final transaction = settings.arguments as Transactions?;
             return MaterialPageRoute(
                 builder: (context) => TransactionForm(transaction));
           }
           //Transaction Detail
           else if (settings.name == TransactionDetail.routeName) {
-            final transaction = settings.arguments as Transaction;
+            final transaction = settings.arguments as Transactions;
             return MaterialPageRoute(
                 builder: (context) => TransactionDetail(transaction.id!));
+          }
+          // Wallet Form
+          else if (settings.name == WalletForm.routeName) {
+            final wallet = settings.arguments as Wallet?;
+            return MaterialPageRoute(builder: (context) => WalletForm(wallet));
+          }
+          // Transaction List
+          else if (settings.name == TransactionList.routeName) {
+            final data = settings.arguments;
+            if (data is List<String>) {
+              return MaterialPageRoute(
+                  builder: (context) => TransactionList(transactionsId: data));
+            } else {
+              return MaterialPageRoute(
+                  builder: (context) =>
+                      TransactionList(categoryId: data as String));
+            }
           }
 
           assert(false, 'Need to implement ${settings.name}');

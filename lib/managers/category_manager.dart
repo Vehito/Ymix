@@ -10,12 +10,13 @@ class CategoryManager with ChangeNotifier {
   CategoryManager._internal();
   final CategoryService _categoryService = CategoryService.instance;
 
-  List<Category> _categories = [];
+  Set<Category> _categories = {};
 
-  List<Category> get categories => _categories;
+  Set<Category> get categories => _categories;
 
   Future<void> fetchAllCategory() async {
     _categories = await _categoryService.fetchAllCategory();
+    await _categoryService.close();
   }
 
   Future<void> addCategory() async {

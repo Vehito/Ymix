@@ -1,13 +1,13 @@
 class Wallet {
   final String? _id;
   final String _name;
-  int _balance;
+  final double _balance;
   final String? _description;
 
   Wallet({
     String? id,
     required String name,
-    required int balance,
+    required double balance,
     String? description,
   })  : _id = id,
         _name = name,
@@ -17,21 +17,21 @@ class Wallet {
   // Getters
   String? get id => _id;
   String get name => _name;
-  int get balance => _balance;
+  double get balance => _balance;
   String? get description => _description;
 
   // Setter cho balance với validation
-  set balance(int newBalance) {
-    if (newBalance < 0) {
-      throw ArgumentError("Balance cannot be negative");
-    }
-    _balance = newBalance;
-  }
+  // set balance(double newBalance) {
+  //   if (newBalance < 0) {
+  //     throw ArgumentError("Balance cannot be negative");
+  //   }
+  //   _balance = newBalance;
+  // }
 
   Wallet copyWith({
     String? id,
     String? name,
-    int? balance,
+    double? balance,
     String? description,
   }) {
     return Wallet(
@@ -41,4 +41,14 @@ class Wallet {
       description: description ?? _description,
     );
   }
+
+  Map<String, dynamic> toJson() =>
+      {'name': _name, 'balance': _balance, 'description': _description};
+
+  factory Wallet.formJson(Map<String, dynamic> json) => Wallet(
+        id: json['id'].toString(),
+        name: json['name'],
+        balance: json['balance'],
+        description: json['description'],
+      );
 }

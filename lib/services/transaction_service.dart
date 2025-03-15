@@ -1,15 +1,20 @@
+import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
+import '../models/transactions.dart';
 import 'package:path/path.dart';
 
 class TransactionService {
-  static Database? _database;
-  static final TransactionService instanse = TransactionService._internal();
-
+  static Database? _transactionDatabase;
+  static final TransactionService instance = TransactionService._internal();
   TransactionService._internal();
 
-  // Future<Database> get database async {
-  //   if (_database != null) return _database!;
-  // }
+  final dbName = 'Transactions';
+
+  Future<Database> get _database async {
+    if (_transactionDatabase != null) return _transactionDatabase!;
+    _transactionDatabase = await _initDatabase('transactions.db');
+    return _transactionDatabase!;
+  }
 
   Future<Database> _initDatabase(String fileName) async {
     final databasePath = await getDatabasesPath();
@@ -20,11 +25,138 @@ class TransactionService {
 
   Future<void> _createTransactionsTable(Database db, int version) async {
     await db.execute('''CREATE TABLE Transactions (
-        id TEXT PRIMARY KEY NOT NULL,
-        amount INTERGER NOT NULL,
-        currency TEXT NOT NULL,
+        id INTEGER PRIMARY KEY NOT NULL,
+        amount REAL NOT NULL,
+        currencySymbol TEXT NOT NULL,
         walletId TEXT NOT NULL,
-        categoryId TEXT NOT NULL
+        categoryId TEXT NOT NULL,
+        dateTime INTEGER NOT NULL,
+        comment TEXT,
+        type TEXT CHECK(type IN ('income', 'expense'))  NOT NULL
       )''');
+  }
+
+  Future<List<Transactions>> fetchAllTransactions() async {
+    final List<Transactions> transactions = [];
+    try {
+      final db = await _database;
+      final transactionModels = await db.query(dbName);
+      for (var model in transactionModels) {
+        transactions.add(Transactions.formJson(model));
+      }
+      return transactions;
+    } catch (e) {
+      return transactions;
+    }
+  }
+
+  Future<List<Transactions>> fetchTransactionsInDay(
+      DateTime dateTime, bool isExpense) async {
+    final List<Transactions> transactions = [];
+    try {
+      final db = await _database;
+      final transactionModels = await db
+          .query(dbName, where: 'dateTime = ? AND type = ?', whereArgs: [
+        dateTime.difference(DateTime(2020, 1, 1)).inDays,
+        isExpense ? 'expense' : 'income'
+      ]);
+      for (var model in transactionModels) {
+        transactions.add(Transactions.formJson(model));
+      }
+      return transactions;
+    } catch (e) {
+      return transactions;
+    }
+  }
+
+  Future<List<Transactions>> fetchTransactionsInPeriod(
+      DateTime start, DateTime end, bool isExpense) async {
+    final List<Transactions> transactions = [];
+    try {
+      final db = await _database;
+      final transactionModels = await db.query(dbName,
+          where: 'dateTime BETWEEN ? AND ? AND type = ?',
+          whereArgs: [
+            start.difference(DateTime(2020, 1, 1)).inDays,
+            end.difference(DateTime(2020, 1, 1)).inDays,
+            isExpense ? 'expense' : 'income'
+          ]);
+      for (var model in transactionModels) {
+        transactions.add(Transactions.formJson(model));
+      }
+      return transactions;
+    } catch (e) {
+      return transactions;
+    }
+  }
+
+  Future<Transactions?> fetchTransactionById(String id) async {
+    try {
+      final db = await _database;
+      final model =
+          await db.query(dbName, where: 'id = ?', whereArgs: [id], limit: 1);
+      return Transactions.formJson(model[0]);
+    } catch (e) {
+      debugPrint(e.toString());
+      return null;
+    }
+  }
+
+  Future<List<Transactions>> fetchTransactionByCategoryId(String id) async {
+    final List<Transactions> transactions = [];
+    try {
+      final db = await _database;
+      final transactionModels =
+          await db.query(dbName, where: 'categoryId = ?', whereArgs: [id]);
+      for (var model in transactionModels) {
+        transactions.add(Transactions.formJson(model));
+      }
+      return transactions;
+    } catch (e) {
+      return transactions;
+    }
+  }
+
+  Future<Transactions?> addTransaction(
+      Transactions transaction, bool isExpense) async {
+    try {
+      final db = await _database;
+      final model = transaction.toJson();
+      model['type'] = isExpense ? 'expense' : 'income';
+      await db.insert(dbName, model);
+      return transaction;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<int?> updateTransaction(Transactions transaction) async {
+    try {
+      final db = await _database;
+      return await db.update(dbName, transaction.toJson(),
+          where: 'id = ?', whereArgs: [int.parse(transaction.id!)]);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<int?> deleteTheTransaction(String id) async {
+    try {
+      final db = await _database;
+      return await db.delete(dbName, where: 'id = ?', whereArgs: [id]);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> close() async {
+    if (_transactionDatabase != null) {
+      try {
+        await _transactionDatabase!.close();
+        _transactionDatabase = null;
+      } catch (e) {
+        debugPrint("Error closing database: $e");
+      }
+    }
   }
 }

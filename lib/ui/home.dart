@@ -13,14 +13,12 @@ class _HomeState extends State<Home> {
 
   static final List<Widget> _pages = <Widget>[
     const TransactionsScreen(),
-    Container(
-      color: Colors.red,
-    )
+    const WalletScreen(),
   ];
 
   final List<Widget> _pagesIcon = <Widget>[
     const NavigationDestination(icon: Icon(Icons.home), label: "Home"),
-    const NavigationDestination(icon: Icon(Icons.timeline), label: "Target"),
+    const NavigationDestination(icon: Icon(Icons.wallet), label: "Wallet"),
   ];
 
   void _onItemTapped(int index) {
@@ -60,11 +58,7 @@ class _HomeState extends State<Home> {
 
   Widget _buildAppDrawer() {
     return Drawer(
-      // Add a ListView to the drawer. This ensures the user can scroll
-      // through the options in the drawer if there isn't enough vertical
-      // space to fit everything.
       child: ListView(
-        // Important: Remove any padding from the ListView.
         padding: EdgeInsets.zero,
         children: [
           const DrawerHeader(
@@ -73,17 +67,11 @@ class _HomeState extends State<Home> {
           ),
           ListTile(
             title: const Text('Item 1'),
-            onTap: () {
-              // Update the state of the app.
-              // ...
-            },
+            onTap: () {},
           ),
           ListTile(
             title: const Text('Item 2'),
-            onTap: () {
-              // Update the state of the app.
-              // ...
-            },
+            onTap: () {},
           ),
         ],
       ),

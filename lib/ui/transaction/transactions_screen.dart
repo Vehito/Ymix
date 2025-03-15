@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:ymix/managers/category_manager.dart';
-import 'package:ymix/managers/expenses_manager.dart';
-import 'package:ymix/managers/income_manager.dart';
 import 'package:ymix/managers/transactions_manager.dart';
+
+import '../../managers/managers.dart';
 import 'package:ymix/models/category.dart';
-import 'package:ymix/models/transaction.dart';
+import 'package:ymix/models/currency.dart';
+import 'package:ymix/models/transactions.dart';
 import 'package:ymix/ui/widgets/pie_chart.dart';
 
 import './transaction_form.dart';
@@ -22,46 +22,41 @@ class TransactionsScreen extends StatefulWidget {
 }
 
 class _TransactionsScreenState extends State<TransactionsScreen> {
-  int _selectedMode = 0;
+  bool _isExpense = true;
   final DateTime _now = DateTime.now();
-  late DateTime _chosenDate1;
-  DateTime? _chosenDate2;
+  final ValueNotifier<DateTime> _chosenDate1 =
+      ValueNotifier<DateTime>(DateTime.now());
+  final ValueNotifier<DateTime?> _chosenDate2 = ValueNotifier<DateTime?>(null);
   double _total = 0;
-  late TransactionsManager manager;
-  late List<Transaction> _transactions;
+  late List<Transactions> _transactions;
   Map<String, double> _indicatorMap = {};
-  late final List<Category> _categories;
-  late final Future<void> _fetchCategoriesFuture;
+  Future<Map<String, double>>? _futureIndicatorsData;
 
   String _displayDate() {
-    if (_chosenDate2 != null) {
-      return ("From: ${FormatHelper.dateFormat.format(_chosenDate1)} - To: ${FormatHelper.dateFormat.format(_chosenDate2!)}");
+    if (_chosenDate2.value != null) {
+      return ("From: ${FormatHelper.dateFormat.format(_chosenDate1.value)} - To: ${FormatHelper.dateFormat.format(_chosenDate2.value!)}");
     }
-    return FormatHelper.dateFormat.format(_chosenDate1);
+    return FormatHelper.dateFormat.format(_chosenDate1.value);
   }
 
-  Future<void> _loadCategories() async {
+  Future<Set<Category>> _loadCategories() async {
     final manager = context.read<CategoryManager>();
     if (manager.categories.isEmpty) {
       await manager.fetchAllCategory();
-      _categories = manager.categories;
     }
+    return manager.categories;
   }
 
-  List<Transaction> _getTransactions() {
-    manager = _selectedMode == 0
-        ? context.watch<ExpensesManager>()
-        : context.watch<IncomeManager>();
-
-    List<Transaction> transactions = _chosenDate2 == null
-        ? manager.getItemsWithDate(_chosenDate1)
-        : manager.getItemsWithPeriod(_chosenDate1, _chosenDate2!);
-
-    return transactions;
+  Future<void> _loadTransactions(TransactionsManager manager) async {
+    _transactions = _chosenDate2.value == null
+        ? await manager.getTransactionsInDay(_chosenDate1.value, _isExpense)
+        : await manager.getTransactionInPeriod(
+            _chosenDate1.value, _chosenDate2.value!, _isExpense);
   }
 
-  Map<String, double> _getIndicatorsData() {
-    _transactions = _getTransactions();
+  Future<Map<String, double>> _getIndicatorsData(
+      TransactionsManager manager) async {
+    await _loadTransactions(manager);
     _total = _transactions.fold(0, (sum, t) => sum + t.amount);
     _indicatorMap = {};
     for (var transaction in _transactions) {
@@ -75,94 +70,191 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     setState(() {});
   }
 
+  void _updateIndicator(TransactionsManager manager) {
+    setState(() {
+      _futureIndicatorsData = _getIndicatorsData(manager);
+    });
+  }
+
+  List<String> _getIdListInCategory(String categoryId) {
+    final List<String> idList = [];
+    for (var transaction in _transactions) {
+      if (transaction.categoryId == categoryId) {
+        idList.add(transaction.id!);
+      }
+    }
+    return idList;
+  }
+
   @override
   void initState() {
-    _chosenDate1 = _now;
-    _fetchCategoriesFuture = _loadCategories();
+    _chosenDate1.value = _now;
     super.initState();
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // _futureIndicatorsData = _getIndicatorsData();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final transactionManager = context.watch<TransactionsManager>();
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
             child: Container(
-              decoration: BoxDecoration(
-                color: Colors.green.shade200,
-                borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20)),
-              ),
-              child: Column(
-                children: [
-                  _bulidHeader(),
-                  PieChartSample(_getIndicatorsData()),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Container(
-                        decoration: const BoxDecoration(
-                            borderRadius: BorderRadius.all(Radius.circular(30)),
-                            color: Colors.white),
-                        width: 200,
-                        height: 30,
-                        alignment: Alignment.center,
-                        child: Text(
-                          '${FormatHelper.numberFormat.format(_total)}đ',
-                          style: const TextStyle(
-                              fontSize: 20, color: Colors.green),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade200,
+                  borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20)),
+                ),
+                child: Column(
+                  children: [
+                    _bulidHeader(transactionManager),
+                    FutureBuilder(
+                      future: _getIndicatorsData(transactionManager),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                                ConnectionState.waiting &&
+                            _indicatorMap.isNotEmpty) {
+                          return Column(
+                            children: [
+                              PieChartSample(_indicatorMap),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  Container(
+                                    decoration: const BoxDecoration(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(30)),
+                                        color: Colors.white),
+                                    width: 200,
+                                    height: 30,
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '${FormatHelper.numberFormat.format(_total)}đ',
+                                      style: const TextStyle(
+                                          fontSize: 20, color: Colors.green),
+                                    ),
+                                  ),
+                                  Container(
+                                    decoration: const ShapeDecoration(
+                                        shape: CircleBorder(),
+                                        color: Colors.orangeAccent),
+                                    child: IconButton(
+                                      onPressed: () {
+                                        Navigator.pushNamed(
+                                            context, TransactionForm.routeName);
+                                      },
+                                      icon: const Icon(Icons.add),
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                ],
+                              )
+                            ],
+                          );
+                        } else if (snapshot.hasError) {
+                          return Text('Lỗi: ${snapshot.error}');
+                        } else if (snapshot.hasData) {
+                          return Column(
+                            children: [
+                              PieChartSample(snapshot.requireData),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  Container(
+                                    decoration: const BoxDecoration(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(30)),
+                                        color: Colors.white),
+                                    width: 200,
+                                    height: 30,
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '${FormatHelper.numberFormat.format(_total)}đ',
+                                      style: const TextStyle(
+                                          fontSize: 20, color: Colors.green),
+                                    ),
+                                  ),
+                                  Container(
+                                    decoration: const ShapeDecoration(
+                                        shape: CircleBorder(),
+                                        color: Colors.orangeAccent),
+                                    child: IconButton(
+                                      onPressed: () => Navigator.pushNamed(
+                                          context, TransactionForm.routeName),
+                                      // .then((value) => _onRefresh()),
+                                      icon: const Icon(Icons.add),
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                ],
+                              )
+                            ],
+                          );
+                        } else {
+                          return const CircularProgressIndicator();
+                        }
+                      },
+                    ),
+                  ],
+                )),
+          ),
+          FutureBuilder<Set<Category>>(
+              future: _loadCategories(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SliverToBoxAdapter(
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                } else if (snapshot.hasError) {
+                  return const SliverToBoxAdapter(
+                    child: Center(child: Text("Lỗi tải dữ liệu!")),
+                  );
+                } else {
+                  return SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => InkWell(
+                        onTap: () {
+                          Navigator.pushNamed(context, 'transaction_list',
+                              arguments: _getIdListInCategory(
+                                  _indicatorMap.keys.elementAt(index)));
+                        },
+                        child: _buildCategoryCard(
+                          snapshot.data!.firstWhere((category) =>
+                              category.id ==
+                              _indicatorMap.keys.elementAt(index)),
+                          _indicatorMap.values.elementAt(index),
                         ),
                       ),
-                      Container(
-                        decoration: const ShapeDecoration(
-                            shape: CircleBorder(), color: Colors.orangeAccent),
-                        child: IconButton(
-                          onPressed: () => Navigator.pushNamed(
-                              context, TransactionForm.routeName),
-                          // .then((value) => _onRefresh()),
-                          icon: const Icon(Icons.add),
-                          color: Colors.white,
-                        ),
-                      )
-                    ],
-                  )
-                ],
-              ),
-            ),
-          ),
-          FutureBuilder(
-            future: _fetchCategoriesFuture,
-            builder: (context, snapshot) => SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => InkWell(
-                  onTap: () {},
-                  child: _buildCategoryCard(
-                    _categories.firstWhere((category) =>
-                        category.id == _indicatorMap.keys.elementAt(index)),
-                    _indicatorMap.values.elementAt(index),
-                  ),
-                ),
-                childCount: _indicatorMap.length,
-              ),
-            ),
-          ),
+                      childCount: _indicatorMap.length,
+                    ),
+                  );
+                }
+              }),
         ],
       ),
     );
   }
 
-  Widget _bulidHeader() {
+  Widget _bulidHeader(TransactionsManager manager) {
     return Column(
       children: [
         const SizedBox(height: 10),
         buildToggleSwitch(
-          _selectedMode,
-          (changedMode) => (setState(() {
-            _selectedMode = changedMode;
-          })),
+          _isExpense ? 0 : 1,
+          (_) {
+            _isExpense = !_isExpense;
+            _updateIndicator(manager);
+          },
         ),
         const SizedBox(height: 20),
         Row(
@@ -171,48 +263,56 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             Dropdown(const ["Day", "Week", "Month", "Year"], (selectedValue) {
               switch (selectedValue) {
                 case "Day":
-                  setState(() {
-                    _chosenDate1 = _now;
-                    _chosenDate2 = null;
-                  });
+                  _chosenDate1.value = _now;
+                  _chosenDate2.value = null;
+
                   break;
                 case "Week":
-                  setState(() {
-                    _chosenDate1 =
-                        _now.subtract(Duration(days: _now.weekday - 1));
-                    _chosenDate2 = _now.add(Duration(days: 7 - _now.weekday));
-                  });
+                  _chosenDate1.value =
+                      _now.subtract(Duration(days: _now.weekday - 1));
+                  _chosenDate2.value =
+                      _now.add(Duration(days: 7 - _now.weekday));
+
                   break;
                 case "Month":
-                  setState(() {
-                    _chosenDate1 = DateTime(_now.year, _now.month, 1);
-                    _chosenDate2 = DateTime(_now.year, _now.month + 1, 0);
-                  });
+                  _chosenDate1.value = DateTime(_now.year, _now.month, 1);
+                  _chosenDate2.value = DateTime(_now.year, _now.month + 1, 0);
+
                   break;
                 case "Year":
-                  setState(() {
-                    _chosenDate1 = DateTime(_now.year, 1, 1);
-                    _chosenDate2 = DateTime(_now.year, 12, 31);
-                  });
+                  _chosenDate1.value = DateTime(_now.year, 1, 1);
+                  _chosenDate2.value = DateTime(_now.year, 12, 31);
+
                   break;
               }
+              _updateIndicator(manager);
             }),
             bulidDateBtn(context, (selectedDate) {
-              _chosenDate1 = selectedDate;
-              _chosenDate2 = null;
+              _chosenDate1.value = selectedDate;
+              _chosenDate2.value = null;
+              _updateIndicator(manager);
             }),
             bulidPeriodBtn(
-              context,
-              (selectedDate) => _chosenDate1 = selectedDate,
-              (selectedDate) => _chosenDate2 = selectedDate,
-            ),
+                context, (selectedDate) => _chosenDate1.value = selectedDate,
+                (selectedDate) {
+              _chosenDate2.value = selectedDate;
+              _updateIndicator(manager);
+            }),
           ],
         ),
         const SizedBox(height: 10),
-        Text(
-          _displayDate(),
-          style: const TextStyle(
-              fontSize: 20, color: Colors.black38, fontWeight: FontWeight.bold),
+        ValueListenableBuilder(
+          valueListenable: _chosenDate1,
+          builder: (context, value, child) => ValueListenableBuilder(
+            valueListenable: _chosenDate2,
+            builder: (context, value, child) => Text(
+              _displayDate(),
+              style: const TextStyle(
+                  fontSize: 20,
+                  color: Colors.black38,
+                  fontWeight: FontWeight.bold),
+            ),
+          ),
         ),
       ],
     );
@@ -228,5 +328,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         tileColor: category.color.withValues(alpha: 0.2),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _chosenDate1.dispose();
+    _chosenDate2.dispose();
+    super.dispose();
   }
 }

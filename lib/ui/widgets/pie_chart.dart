@@ -21,6 +21,7 @@ class PieChart2State extends State<PieChartSample> {
       return Container(
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
+          color: Colors.white,
           border: Border(
             bottom: BorderSide(width: 10.0),
             top: BorderSide(width: 10.0),
@@ -39,6 +40,7 @@ class PieChart2State extends State<PieChartSample> {
     }));
     return PieChart(
       dataMap: dataMap,
+      chartType: ChartType.ring,
       chartRadius: 150.0,
       animationDuration: const Duration(seconds: 1),
       baseChartColor: Colors.grey[300]!,

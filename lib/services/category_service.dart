@@ -62,8 +62,8 @@ class CategoryService {
     return category;
   }
 
-  Future<List<Category>> fetchAllCategory() async {
-    final List<Category> categories = [];
+  Future<Set<Category>> fetchAllCategory() async {
+    final Set<Category> categories = {};
     try {
       final db = await _database;
       final categoryModels = await db.query('Categories');
@@ -76,10 +76,14 @@ class CategoryService {
     }
   }
 
-  void close() {
+  Future<void> close() async {
     if (_categoryDatabase != null) {
-      _categoryDatabase!.close();
-      _categoryDatabase = null;
+      try {
+        await _categoryDatabase!.close();
+        _categoryDatabase = null;
+      } catch (e) {
+        debugPrint("Error closing database: $e");
+      }
     }
   }
 }

@@ -1,31 +1,22 @@
-import './transaction.dart';
+import 'transactions.dart';
 
-class Expense extends Transaction {
+class Expense extends Transactions {
   Expense({
-    String? id,
-    required double amount,
-    required String currency,
-    required String walletId,
-    required String categoryId,
-    required DateTime dateTime,
-    List<String>? tags,
-    String? comment,
-  }) : super(
-          id: id,
-          amount: amount,
-          currency: currency,
-          walletId: walletId,
-          categoryId: categoryId,
-          dateTime: dateTime,
-          tags: tags,
-          comment: comment,
-        );
+    super.id,
+    required super.amount,
+    required super.currencySymbol,
+    required super.walletId,
+    required super.categoryId,
+    required super.dateTime,
+    super.tags,
+    super.comment,
+  });
 
   @override
   Expense copyWith({
     String? id,
     double? amount,
-    String? currency,
+    String? currencySymbol,
     String? walletId,
     String? categoryId,
     DateTime? dateTime,
@@ -35,7 +26,7 @@ class Expense extends Transaction {
     return Expense(
       id: id ?? this.id,
       amount: amount ?? this.amount,
-      currency: currency ?? this.currency,
+      currencySymbol: currencySymbol ?? this.currencySymbol,
       walletId: walletId ?? this.walletId,
       categoryId: categoryId ?? this.categoryId,
       dateTime: dateTime ?? this.dateTime,

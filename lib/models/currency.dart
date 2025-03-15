@@ -37,4 +37,18 @@ class Currency {
   double convertTo(double amount, Currency targetCurrency) {
     return (amount / _exchangeRate) * targetCurrency._exchangeRate;
   }
+
+  Map<String, dynamic> toJson() => {
+        'code': _code,
+        'symbol': _symbol,
+        'decimalDigits': _decimalDigits,
+        'exchangeRate': _exchangeRate,
+      };
+
+  factory Currency.formJson(Map<String, dynamic> json) => Currency(
+        code: json['code'],
+        symbol: json['symbol'],
+        decimalDigits: json['decimalDigits'],
+        exchangeRate: json['exchangeRate'],
+      );
 }
