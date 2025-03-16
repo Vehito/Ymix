@@ -10,11 +10,11 @@ class CategoryService {
 
   Future<Database> get _database async {
     if (_categoryDatabase != null) return _categoryDatabase!;
-    _categoryDatabase = await _initDatabase('categories.db');
+    _categoryDatabase = await initDatabase('categories.db');
     return _categoryDatabase!;
   }
 
-  Future<Database> _initDatabase(String fileName) async {
+  Future<Database> initDatabase(String fileName) async {
     final databasePath = await getDatabasesPath();
     final filePath = join(databasePath, fileName);
     return await openDatabase(filePath,

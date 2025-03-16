@@ -14,11 +14,14 @@ class _HomeState extends State<Home> {
   static final List<Widget> _pages = <Widget>[
     const TransactionsScreen(),
     const WalletScreen(),
+    const SpendingLimitScreen(),
   ];
 
   final List<Widget> _pagesIcon = <Widget>[
     const NavigationDestination(icon: Icon(Icons.home), label: "Home"),
     const NavigationDestination(icon: Icon(Icons.wallet), label: "Wallet"),
+    const NavigationDestination(
+        icon: Icon(Icons.show_chart), label: "Spending Limit"),
   ];
 
   void _onItemTapped(int index) {
@@ -53,6 +56,8 @@ class _HomeState extends State<Home> {
         backgroundColor: Colors.green.shade200,
         indicatorColor: Colors.green,
       ),
+      floatingActionButton:
+          IconButton(onPressed: () {}, icon: const Icon(Icons.add)),
     );
   }
 

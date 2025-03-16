@@ -24,6 +24,11 @@ class CurrencyManager with ChangeNotifier {
 
   Future<Currency?> getCurrencyByCode(String code) async {
     return _currencies.firstWhereOrNull((c) => c.code == code) ??
-        await _currencyService.fetchWalletById(code);
+        await _currencyService.fetchCurrencyByCode(code);
+  }
+
+  Future<Currency?> getCurrencyBySymbol(String symbol) async {
+    return _currencies.firstWhereOrNull((c) => c.symbol == symbol) ??
+        await _currencyService.fetchCurrencyBySymbol(symbol);
   }
 }

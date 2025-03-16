@@ -55,6 +55,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (ctx) => CurrencyManager.instance,
         ),
+        ChangeNotifierProvider(
+          create: (ctx) => SpendingLimitManager.instance,
+        ),
       ],
       child: MaterialApp(
         title: 'Flutter Demo',

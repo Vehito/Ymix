@@ -14,6 +14,10 @@ class CategoryManager with ChangeNotifier {
 
   Set<Category> get categories => _categories;
 
+  Future<void> init() async {
+    if (categories.isEmpty) fetchAllCategory();
+  }
+
   Future<void> fetchAllCategory() async {
     _categories = await _categoryService.fetchAllCategory();
     await _categoryService.close();

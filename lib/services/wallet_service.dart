@@ -10,11 +10,11 @@ class WalletService {
 
   Future<Database> get _database async {
     if (_walletDatebase != null) return _walletDatebase!;
-    _walletDatebase = await _initDatabase('wallets.db');
+    _walletDatebase = await initDatabase('wallets.db');
     return _walletDatebase!;
   }
 
-  Future<Database> _initDatabase(String fileName) async {
+  Future<Database> initDatabase(String fileName) async {
     final databasePath = await getDatabasesPath();
     final filePath = join(databasePath, fileName);
     return await openDatabase(filePath,

@@ -12,11 +12,11 @@ class CurrencyService {
 
   Future<Database> get _database async {
     if (_currencyDatabase != null) return _currencyDatabase!;
-    _currencyDatabase = await _initDatabase('currencies.db');
+    _currencyDatabase = await initDatabase('currencies.db');
     return _currencyDatabase!;
   }
 
-  Future<Database> _initDatabase(String fileName) async {
+  Future<Database> initDatabase(String fileName) async {
     final databasePath = await getDatabasesPath();
     final filePath = join(databasePath, fileName);
     return await openDatabase(filePath,
@@ -58,12 +58,25 @@ class CurrencyService {
     }
   }
 
-  Future<Currency?> fetchWalletById(String code) async {
+  Future<Currency?> fetchCurrencyByCode(String code) async {
     final Currency? currency;
     try {
       final db = await _database;
       final result = await db.query(dbName,
           where: 'code == ?', whereArgs: [code], limit: 1);
+      currency = Currency.formJson(result[0]);
+      return currency;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<Currency?> fetchCurrencyBySymbol(String symbol) async {
+    final Currency? currency;
+    try {
+      final db = await _database;
+      final result = await db.query(dbName,
+          where: 'symbol == ?', whereArgs: [symbol], limit: 1);
       currency = Currency.formJson(result[0]);
       return currency;
     } catch (e) {

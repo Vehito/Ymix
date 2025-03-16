@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:ymix/services/category_service.dart';
+import 'package:ymix/services/currency_service.dart';
+import 'package:ymix/services/wallet_service.dart';
 import '../models/transactions.dart';
 import 'package:path/path.dart';
 
@@ -18,13 +21,16 @@ class TransactionService {
 
   Future<Database> _initDatabase(String fileName) async {
     final databasePath = await getDatabasesPath();
+    await CategoryService.instance.initDatabase('categories.db');
+    await WalletService.instance.initDatabase('wallets.db');
+    await CurrencyService.instance.initDatabase('currencies.db');
     final filePath = join(databasePath, fileName);
     return await openDatabase(filePath,
         version: 1, onCreate: _createTransactionsTable);
   }
 
   Future<void> _createTransactionsTable(Database db, int version) async {
-    await db.execute('''CREATE TABLE Transactions (
+    await db.execute('''CREATE TABLE $dbName (
         id INTEGER PRIMARY KEY NOT NULL,
         amount REAL NOT NULL,
         currencySymbol TEXT NOT NULL,
@@ -32,7 +38,10 @@ class TransactionService {
         categoryId TEXT NOT NULL,
         dateTime INTEGER NOT NULL,
         comment TEXT,
-        type TEXT CHECK(type IN ('income', 'expense'))  NOT NULL
+        type TEXT CHECK(type IN ('income', 'expense'))  NOT NULL,
+        FOREIGN KEY (currencySymbol) REFERENCES Currencies (symbol),
+        FOREIGN KEY (walletId) REFERENCES Wallets (id),
+        FOREIGN KEY (categoryId) REFERENCES Categories (id)
       )''');
   }
 

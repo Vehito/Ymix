@@ -27,14 +27,10 @@ class WalletManager with ChangeNotifier {
   }
 
   Future<Wallet?> getWalletById(String id) async {
-    try {
-      Wallet wallet = _wallets.firstWhere((wallet) => wallet.id == id);
-      return wallet;
-    } catch (e) {
-      return await _walletService.fetchWalletById(id);
-    }
+    Wallet? wallet = _wallets.firstWhereOrNull((wallet) => wallet.id == id);
+    return wallet ?? await _walletService.fetchWalletById(id);
   }
-  
+
   String getWalletName(String id) {
     final wallet = _wallets.firstWhereOrNull((wallet) => wallet.id == id);
     if (wallet != null) {

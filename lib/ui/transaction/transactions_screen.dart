@@ -30,7 +30,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   double _total = 0;
   late List<Transactions> _transactions;
   Map<String, double> _indicatorMap = {};
-  Future<Map<String, double>>? _futureIndicatorsData;
+  late final Currency currency;
 
   String _displayDate() {
     if (_chosenDate2.value != null) {
@@ -57,6 +57,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   Future<Map<String, double>> _getIndicatorsData(
       TransactionsManager manager) async {
     await _loadTransactions(manager);
+
     _total = _transactions.fold(0, (sum, t) => sum + t.amount);
     _indicatorMap = {};
     for (var transaction in _transactions) {
@@ -72,7 +73,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   void _updateIndicator(TransactionsManager manager) {
     setState(() {
-      _futureIndicatorsData = _getIndicatorsData(manager);
+      _getIndicatorsData(manager);
     });
   }
 
@@ -95,7 +96,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // _futureIndicatorsData = _getIndicatorsData();
   }
 
   @override
