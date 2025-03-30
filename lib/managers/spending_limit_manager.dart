@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:ymix/models/spending_limit.dart';
 import 'package:ymix/services/spending_limit_service.dart';
+import 'package:ymix/services/transaction_service.dart';
 
 class SpendingLimitManager with ChangeNotifier {
   static final SpendingLimitManager _instance =
@@ -38,7 +39,15 @@ class SpendingLimitManager with ChangeNotifier {
       double amount,
       String currencySymbol,
       double currentSpending,
-      String status) async {
+      String status,
+      bool isSync) async {
+    if (isSync) {
+      currentSpending = await TransactionService.instance
+          .getTotalAmountInPeriod(start, end,
+              isExpense: true, categoryId: categoryId);
+    }
+    if (currentSpending > amount) status = 'exceeded';
+    if (end.isBefore(DateTime.now())) status = 'expired';
     final newLimit = await _spendingLimitService.addLimit(SpendingLimit(
         categoryId: categoryId,
         start: start,
@@ -48,6 +57,23 @@ class SpendingLimitManager with ChangeNotifier {
         currentSpending: currentSpending,
         status: status));
     if (newLimit != null) _spendingLimitList.add(newLimit);
+    notifyListeners();
+  }
+
+  Future<void> updateLimit(SpendingLimit limit) async {
+    final oldCategoryId = (await getLimitById(limit.id!))!.categoryId;
+    if (limit.categoryId != oldCategoryId) {
+      final currentSpending = await TransactionService.instance
+          .getTotalAmountInPeriod(limit.start, limit.end,
+              isExpense: true, categoryId: limit.categoryId);
+      limit = limit.copyWith(currentSpending: currentSpending);
+    }
+    await _spendingLimitService.updateLimit(limit);
+    notifyListeners();
+  }
+
+  Future<void> deleteLimit(String id) async {
+    await _spendingLimitService.deleteLimit(id);
     notifyListeners();
   }
 }

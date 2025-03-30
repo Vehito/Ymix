@@ -59,7 +59,7 @@ class Transactions {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': _id ?? _dateTime.difference(DateTime(2020, 1, 1)).inSeconds,
+        'id': _id ?? DateTime.now().difference(DateTime(2024, 1, 1)).inSeconds,
         'amount': _amount,
         'currencySymbol': _currencySymbol,
         'walletId': _walletId,

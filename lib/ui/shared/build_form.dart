@@ -1,44 +1,207 @@
 import 'package:choice/choice.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:month_picker_dialog/month_picker_dialog.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:ymix/ui/shared/dialog_utils.dart';
 import './format_helper.dart';
 
 Widget buildDateTimeForm(
-  BuildContext context,
-  DateTime dateTime,
-  Color formColor,
-  ValueChanged<DateTime> onDateSaved,
-) {
+    {required BuildContext context,
+    required DateTime dateTime,
+    Color? formColor,
+    required ValueChanged<DateTime> onDateSaved,
+    String? title,
+    bool isMonth = false,
+    bool isYear = false}) {
+  Widget buildDateForm(FormFieldState<DateTime?> field) {
+    return ListTile(
+      leading: const Icon(Icons.calendar_month),
+      title:
+          Text('${title ?? ''}${FormatHelper.dateFormat.format(field.value!)}'),
+      trailing: IconButton(
+        onPressed: () async {
+          field.didChange(
+            await showDatePicker(
+                  context: context,
+                  initialDate: dateTime,
+                  firstDate: DateTime(dateTime.year - 1),
+                  lastDate: DateTime(dateTime.year + 1),
+                ) ??
+                field.value,
+          );
+        },
+        icon: const Icon(Icons.change_circle),
+      ),
+    );
+  }
+
+  Widget buildMonthForm(FormFieldState<DateTime?> field) {
+    return ListTile(
+      leading: const Icon(Icons.calendar_month),
+      title: Text(
+          '${title ?? ''}${FormatHelper.monthFormat.format(field.value!)}'),
+      trailing: IconButton(
+        onPressed: () async {
+          field.didChange(
+            await showMonthPicker(
+                  context: context,
+                  initialDate: dateTime,
+                  firstDate: DateTime(dateTime.year - 1),
+                  lastDate: DateTime(dateTime.year + 1),
+                ) ??
+                field.value,
+          );
+        },
+        icon: const Icon(Icons.change_circle),
+      ),
+    );
+  }
+
+  Widget buildYearForm(FormFieldState<DateTime?> field) {
+    return ListTile(
+      leading: const Icon(Icons.calendar_month),
+      title:
+          Text('${title ?? ''}${FormatHelper.yearFormat.format(field.value!)}'),
+      trailing: IconButton(
+        onPressed: () async {
+          final year = await showYearPicker(
+            context: context,
+            initialDate: dateTime,
+            firstDate: DateTime(dateTime.year - 5),
+            lastDate: DateTime(dateTime.year + 5),
+          );
+          field.didChange(DateTime(year ?? field.value!.year));
+        },
+        icon: const Icon(Icons.change_circle),
+      ),
+    );
+  }
+
   return FormField<DateTime>(
     initialValue: dateTime,
     onSaved: (newValue) => onDateSaved(newValue!),
     builder: (field) => Card(
       color: formColor,
-      child: Column(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.calendar_month),
-            title: Text(FormatHelper.dateFormat.format(field.value!)),
-            trailing: IconButton(
-              onPressed: () async {
-                field.didChange(
-                  await showDatePicker(
-                        context: context,
-                        initialDate: dateTime,
-                        firstDate: DateTime(dateTime.year - 1),
-                        lastDate: DateTime(dateTime.year + 1),
-                      ) ??
-                      field.value,
-                );
-              },
-              icon: const Icon(Icons.change_circle),
-            ),
-          )
-        ],
-      ),
+      child: isYear
+          ? buildYearForm(field)
+          : isMonth
+              ? buildMonthForm(field)
+              : buildDateForm(field),
     ),
+  );
+}
+
+Widget buildDateRangeForm({
+  required BuildContext context,
+  required ValueChanged<dynamic> onDateRangeSaved,
+  Color? formColor,
+  DateTime? start,
+  DateTime? end,
+  bool isMonth = false,
+  bool isInSameYear = true,
+  bool isYear = false,
+}) {
+  final now = DateTime.now();
+  Widget buildDateForm(FormFieldState<DateTimeRange?> field) {
+    return ListTile(
+      leading: const Icon(Icons.calendar_month),
+      title: Text(
+          '${FormatHelper.dateFormat.format(field.value!.start)} - ${FormatHelper.dateFormat.format(field.value!.end)}'),
+      trailing: IconButton(
+          onPressed: () async {
+            field.didChange(
+              await showDateRangePicker(
+                      context: context,
+                      initialDateRange: field.value,
+                      firstDate: DateTime(field.value!.start.year - 2),
+                      lastDate: DateTime(field.value!.end.year + 2)) ??
+                  field.value,
+            );
+          },
+          icon: const Icon(Icons.change_circle)),
+    );
+  }
+
+  Widget buildMonthForm(FormFieldState<DateTimeRange?> field) {
+    return ListTile(
+      leading: const Icon(Icons.calendar_month),
+      title: Text(
+          '${FormatHelper.monthFormat.format(field.value!.start)} - ${FormatHelper.monthFormat.format(field.value!.end)}'),
+      trailing: IconButton(
+          onPressed: () async {
+            await showMonthRangePicker(
+              context: context,
+              firstDate: DateTime(
+                isInSameYear ? now.year : field.value!.start.year - 2,
+                1,
+              ),
+              lastDate: DateTime(
+                isInSameYear ? now.year : field.value!.start.year + 2,
+                12,
+              ),
+              rangeList: true,
+            ).then((List<DateTime>? selectedValue) {
+              field.didChange(
+                selectedValue != null
+                    ? DateTimeRange(
+                        start: selectedValue.first, end: selectedValue.last)
+                    : field.value,
+              );
+            });
+          },
+          icon: const Icon(Icons.change_circle)),
+    );
+  }
+
+  Widget buildYearForm(FormFieldState<DateTimeRange?> field) {
+    return ListTile(
+      leading: const Icon(Icons.calendar_month),
+      title: Text(
+          '${FormatHelper.yearFormat.format(field.value!.start)} - ${FormatHelper.yearFormat.format(field.value!.end)}'),
+      trailing: IconButton(
+          onPressed: () async {
+            final firstYear = await showYearPicker(
+              context: context,
+              headerTitle: const Text('Choose first year'),
+              firstDate: DateTime(field.value!.start.year - 5),
+              lastDate: DateTime(field.value!.start.year + 5),
+            );
+
+            if (!context.mounted) return;
+            final secondYear = await showYearPicker(
+              context: context,
+              headerTitle: const Text('Choose second year'),
+              firstDate: DateTime(field.value!.start.year - 5),
+              lastDate: DateTime(field.value!.start.year + 5),
+            );
+
+            field.didChange(
+              (firstYear != null && secondYear != null)
+                  ? DateTimeRange(
+                      start: DateTime(firstYear), end: DateTime(secondYear))
+                  : field.value,
+            );
+          },
+          icon: const Icon(Icons.change_circle)),
+    );
+  }
+
+  return FormField<DateTimeRange?>(
+    initialValue: DateTimeRange(
+        start: start ?? DateTime.now(), end: end ?? DateTime.now()),
+    onSaved: (newDate) => onDateRangeSaved(newDate!),
+    validator: (value) {
+      if (value == null) return "Invalid Date time range";
+      return null;
+    },
+    builder: (field) => Card(
+        color: formColor,
+        child: isYear
+            ? buildYearForm(field)
+            : isMonth
+                ? buildMonthForm(field)
+                : buildDateForm(field)),
   );
 }
 
@@ -301,7 +464,7 @@ Widget buildTextForm(String? text, String titleForm, Color formColor,
   );
 }
 
-Widget bulidDateBtn(BuildContext context, ValueChanged<DateTime> onDateChange) {
+Widget buildDateBtn(BuildContext context, ValueChanged<DateTime> onDateChange) {
   return ElevatedButton.icon(
     icon: const Icon(Icons.calendar_month),
     label: const Text("Day"),
@@ -320,55 +483,29 @@ Widget bulidDateBtn(BuildContext context, ValueChanged<DateTime> onDateChange) {
   );
 }
 
-Widget bulidPeriodBtn(
+Widget buildPeriodBtn(
   BuildContext context,
-  ValueChanged<DateTime> onDate1Change,
-  ValueChanged<DateTime?> onDate2Change,
+  ValueChanged<DateTimeRange> onPeriodChange,
 ) {
   return ElevatedButton.icon(
     icon: const Icon(Icons.timelapse),
     label: const Text("Period"),
     onPressed: () async {
-      final currentDate = DateTime.now();
-      final selectedDate1 = await showDatePicker(
-        context: context,
-        helpText: "Choose the starting time",
-        initialDate: currentDate,
-        firstDate: DateTime(currentDate.year - 1),
-        lastDate: DateTime(currentDate.year + 1),
-      );
-
-      if (selectedDate1 != null) {
-        onDate1Change(selectedDate1);
-      }
-
-      if (context.mounted) {
-        final selectedDate2 = await showDatePicker(
+      final now = DateTime.now();
+      final selectedPeriod = await showDateRangePicker(
           context: context,
-          helpText: "Choose the end time",
-          initialDate: currentDate,
-          firstDate: DateTime(currentDate.year - 1),
-          lastDate: DateTime(currentDate.year + 1),
-          barrierLabel: "aaa",
-        );
-        if (!context.mounted) {
-          return;
-        }
-        if (selectedDate2 != null && selectedDate2.isAfter(selectedDate1!)) {
-          onDate2Change(selectedDate2);
-        } else {
-          onDate2Change(null);
-          showErrorDialog(context, "Invalid end time!");
-        }
-      }
+          firstDate: DateTime(now.year - 1),
+          lastDate: DateTime(now.year + 1));
+      if (selectedPeriod != null) onPeriodChange(selectedPeriod);
     },
   );
 }
 
 class Dropdown extends StatefulWidget {
-  const Dropdown(this.valueList, this.onPressed, {super.key});
+  const Dropdown(this.valueList, this.onPressed, {super.key, this.width});
 
   final List<String> valueList;
+  final double? width;
   final Function(String selectedValue) onPressed;
 
   @override
@@ -394,7 +531,7 @@ class _DropdownState extends State<Dropdown> {
       value: selectedValue,
       buttonStyleData: ButtonStyleData(
         height: 40,
-        width: 100,
+        width: widget.width ?? 100,
         padding: const EdgeInsets.only(left: 14, right: 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),

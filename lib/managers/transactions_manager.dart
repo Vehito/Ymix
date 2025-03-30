@@ -1,10 +1,21 @@
+library transactions_manager;
+
 import 'package:flutter/material.dart';
-import 'package:ymix/managers/wallet_manager.dart';
+import 'package:ymix/models/expense.dart';
+import 'package:ymix/models/income.dart';
+import 'package:ymix/services/spending_limit_service.dart';
 import 'package:ymix/services/transaction_service.dart';
+import 'package:ymix/services/wallet_service.dart';
 
 import '../models/transactions.dart';
+part 'income_manager.dart';
+part 'expenses_manager.dart';
 
 class TransactionsManager with ChangeNotifier {
+  static final TransactionsManager _instance = TransactionsManager._internal();
+  static TransactionsManager get instance => _instance;
+
+  TransactionsManager._internal();
   final TransactionService _transactionService = TransactionService.instance;
 
   List<Transactions> transactions = [];
@@ -13,32 +24,26 @@ class TransactionsManager with ChangeNotifier {
     return transactions.length;
   }
 
-  Future<List<Transactions>> getTransactionsInDay(
-      DateTime dateTime, bool isExpense) async {
-    return await _transactionService.fetchTransactionsInDay(
-        dateTime, isExpense);
+  Future<List<Transactions>> getTransactions(
+      {List<String>? idList,
+      String? walletId,
+      String? categoryId,
+      DateTime? dateTime,
+      DateTimeRange? period,
+      bool? isExpense}) async {
+    return await _transactionService.fetchTransactions(
+        idList: idList,
+        walletId: walletId,
+        categoryId: categoryId,
+        dateTime: dateTime,
+        period: period,
+        isExpense: isExpense);
   }
 
-  Future<List<Transactions>> getTransactionInPeriod(
-      DateTime start, DateTime end, bool isExpense) async {
-    return _transactionService.fetchTransactionsInPeriod(start, end, isExpense);
-  }
-
-  Future<Transactions?> getTransactionWithId(String id) async {
-    return await _transactionService.fetchTransactionById(id);
-  }
-
-  Future<List<Transactions>> getTransactionListWithId(
-      List<String> idList) async {
-    final List<Transactions> transactions = [];
-    for (var id in idList) {
-      transactions.add((await _transactionService.fetchTransactionById(id))!);
-    }
-    return transactions;
-  }
-
-  Future<List<Transactions>> getTransactionsByCategoryId(String id) async {
-    return await _transactionService.fetchTransactionByCategoryId(id);
+  Future<double> getTotalAmountInPeriod(DateTime start, DateTime end,
+      {bool? isExpense, String? categoryId, String? walletId}) async {
+    return await _transactionService.getTotalAmountInPeriod(start, end,
+        isExpense: isExpense, categoryId: categoryId, walletId: walletId);
   }
 
   Future<void> addTransaction(
@@ -56,14 +61,20 @@ class TransactionsManager with ChangeNotifier {
         walletId: walletId,
         categoryId: categoryId,
         dateTime: dateTime);
-    final walletManager = WalletManager.instance;
-    final wallet = await walletManager.getWalletById(transaction.walletId);
-    if (wallet == null || wallet.balance < transaction.amount) return;
-
+    final walletService = WalletService.instance;
+    final walletBalance =
+        await walletService.fetchBalanceById(transaction.walletId);
+    if (walletBalance == null ||
+        (isExpense && walletBalance < transaction.amount)) {
+      return;
+    }
     await _transactionService.addTransaction(transaction, isExpense);
-    await walletManager.editWallet(
-        id: transaction.walletId,
-        balance: (wallet.balance - transaction.amount));
+    await walletService.changeAmount(
+        walletId, isExpense ? (0 - amount) : amount);
+    if (isExpense) {
+      await SpendingLimitService.instance
+          .updateCurrentSpendingInPeriod(amount, dateTime);
+    }
     notifyListeners();
   }
 
@@ -72,7 +83,11 @@ class TransactionsManager with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteTransaction(String id) async {
-    
+  Future<void> deleteTransaction(
+      String id, double amount, DateTime dateTime) async {
+    await _transactionService.deleteTransaction(id);
+    await SpendingLimitService.instance
+        .updateCurrentSpendingInPeriod(0 - amount, dateTime);
+    notifyListeners();
   }
 }

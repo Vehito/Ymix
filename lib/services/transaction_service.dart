@@ -38,85 +38,57 @@ class TransactionService {
         categoryId TEXT NOT NULL,
         dateTime INTEGER NOT NULL,
         comment TEXT,
-        type TEXT CHECK(type IN ('income', 'expense'))  NOT NULL,
+        isExpense INTEGER CHECK(isExpense IN (0, 1)) NOT NULL,
         FOREIGN KEY (currencySymbol) REFERENCES Currencies (symbol),
-        FOREIGN KEY (walletId) REFERENCES Wallets (id),
+        FOREIGN KEY (walletId) REFERENCES Wallets (id) ON DELETE CASCADE,
         FOREIGN KEY (categoryId) REFERENCES Categories (id)
       )''');
   }
 
-  Future<List<Transactions>> fetchAllTransactions() async {
+  Future<List<Transactions>> fetchTransactions(
+      {List<String>? idList,
+      String? walletId,
+      String? categoryId,
+      DateTime? dateTime,
+      DateTimeRange? period,
+      bool? isExpense}) async {
     final List<Transactions> transactions = [];
-    try {
-      final db = await _database;
-      final transactionModels = await db.query(dbName);
-      for (var model in transactionModels) {
-        transactions.add(Transactions.formJson(model));
+    String whereClause = '';
+    List<dynamic> whereArgs = [];
+
+    if (idList != null) {
+      final String idPlaceholders = List.filled(idList.length, '?').join(', ');
+      whereClause = 'id IN ($idPlaceholders)';
+      whereArgs = idList;
+    } else {
+      List<String> clauseList = [];
+      if (walletId != null) {
+        clauseList.add('walletId = ?');
+        whereArgs.add(walletId);
       }
-      return transactions;
-    } catch (e) {
-      return transactions;
-    }
-  }
-
-  Future<List<Transactions>> fetchTransactionsInDay(
-      DateTime dateTime, bool isExpense) async {
-    final List<Transactions> transactions = [];
-    try {
-      final db = await _database;
-      final transactionModels = await db
-          .query(dbName, where: 'dateTime = ? AND type = ?', whereArgs: [
-        dateTime.difference(DateTime(2020, 1, 1)).inDays,
-        isExpense ? 'expense' : 'income'
-      ]);
-      for (var model in transactionModels) {
-        transactions.add(Transactions.formJson(model));
+      if (categoryId != null) {
+        clauseList.add('categoryId = ?');
+        whereArgs.add(categoryId);
       }
-      return transactions;
-    } catch (e) {
-      return transactions;
-    }
-  }
-
-  Future<List<Transactions>> fetchTransactionsInPeriod(
-      DateTime start, DateTime end, bool isExpense) async {
-    final List<Transactions> transactions = [];
-    try {
-      final db = await _database;
-      final transactionModels = await db.query(dbName,
-          where: 'dateTime BETWEEN ? AND ? AND type = ?',
-          whereArgs: [
-            start.difference(DateTime(2020, 1, 1)).inDays,
-            end.difference(DateTime(2020, 1, 1)).inDays,
-            isExpense ? 'expense' : 'income'
-          ]);
-      for (var model in transactionModels) {
-        transactions.add(Transactions.formJson(model));
+      if (isExpense != null) {
+        clauseList.add('isExpense = ?');
+        whereArgs.add(isExpense ? 1 : 0);
       }
-      return transactions;
-    } catch (e) {
-      return transactions;
+      if (dateTime != null) {
+        clauseList.add('dateTime = ?');
+        whereArgs.add(_dateTimeToInt(dateTime));
+      } else if (period != null) {
+        clauseList.add('dateTime BETWEEN ? AND ?');
+        whereArgs.add(_dateTimeToInt(period.start));
+        whereArgs.add(_dateTimeToInt(period.end));
+      }
+      whereClause = clauseList.join(' AND ');
     }
-  }
 
-  Future<Transactions?> fetchTransactionById(String id) async {
-    try {
-      final db = await _database;
-      final model =
-          await db.query(dbName, where: 'id = ?', whereArgs: [id], limit: 1);
-      return Transactions.formJson(model[0]);
-    } catch (e) {
-      debugPrint(e.toString());
-      return null;
-    }
-  }
-
-  Future<List<Transactions>> fetchTransactionByCategoryId(String id) async {
-    final List<Transactions> transactions = [];
     try {
       final db = await _database;
       final transactionModels =
-          await db.query(dbName, where: 'categoryId = ?', whereArgs: [id]);
+          await db.query(dbName, where: whereClause, whereArgs: whereArgs);
       for (var model in transactionModels) {
         transactions.add(Transactions.formJson(model));
       }
@@ -131,7 +103,7 @@ class TransactionService {
     try {
       final db = await _database;
       final model = transaction.toJson();
-      model['type'] = isExpense ? 'expense' : 'income';
+      model['isExpense'] = isExpense ? 1 : 0;
       await db.insert(dbName, model);
       return transaction;
     } catch (e) {
@@ -149,13 +121,45 @@ class TransactionService {
     }
   }
 
-  Future<int?> deleteTheTransaction(String id) async {
+  Future<int?> deleteTransaction(String id) async {
     try {
       final db = await _database;
       return await db.delete(dbName, where: 'id = ?', whereArgs: [id]);
     } catch (e) {
       return null;
     }
+  }
+
+  Future<double> getTotalAmountInPeriod(DateTime start, DateTime end,
+      {bool? isExpense, String? categoryId, String? walletId}) async {
+    try {
+      final db = await _database;
+      String whereClause =
+          'SELECT SUM(amount) as total FROM $dbName WHERE dateTime BETWEEN ? AND ?';
+      List<dynamic> whereArgs = [_dateTimeToInt(start), _dateTimeToInt(end)];
+
+      if (isExpense != null) {
+        whereClause += ' AND isExpense = ?';
+        whereArgs.add(isExpense ? 1 : 0);
+      }
+      if (categoryId != null) {
+        whereClause += ' AND categoryId = ?';
+        whereArgs.add(categoryId);
+      }
+      if (walletId != null) {
+        whereClause += ' AND walletId = ?';
+        whereArgs.add(walletId);
+      }
+
+      final json = await db.rawQuery(whereClause, whereArgs);
+      return json.first['total'] == null ? 0 : json.first['total'] as double;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  int _dateTimeToInt(DateTime dateTime) {
+    return dateTime.difference(DateTime(2020, 1, 1)).inDays;
   }
 
   Future<void> close() async {

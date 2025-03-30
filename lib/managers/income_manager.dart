@@ -1,15 +1,12 @@
-import 'package:ymix/models/income.dart';
-
-import 'package:ymix/managers/transactions_manager.dart';
-import 'package:ymix/models/transactions.dart';
-import 'package:ymix/services/transaction_service.dart';
+part of 'transactions_manager.dart';
 
 class IncomeManager extends TransactionsManager {
+  IncomeManager._internal()
+      : super._internal(); // Constructor riêng của IncomeManager
+
   static final IncomeManager _instance = IncomeManager._internal();
   static IncomeManager get instance => _instance;
 
-  IncomeManager._internal();
-  final TransactionService _transactionService = TransactionService.instance;
   List<Income> _incomes = [];
 
   @override

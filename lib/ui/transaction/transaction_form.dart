@@ -29,26 +29,20 @@ class _TransactionFormState extends State<TransactionForm> {
   final Color _dividerColor = Colors.black38;
 
   double? _amount;
-  String _currencySymbol = 'đ';
+  final String _currencySymbol = 'đ';
   String? _walletId;
   String? _categoryId;
   DateTime _dateTime = DateTime.now();
   List<String>? _tags;
   String? _comment;
 
-  late final Set<Category> _categories;
   final ValueNotifier<String?> _selectedCategoryName =
       ValueNotifier<String?>(null);
-  late final Future<void> _loadCategoriesFuture;
-  late final Future<void> _loadWalletsFuture;
-  late final List<Wallet>? _wallets;
   String? _selectedWalletName;
 
   @override
   void initState() {
     final originalTransation = widget.transaction;
-    _loadCategoriesFuture = _loadCategories();
-    _loadWalletsFuture = _loadWallets();
     if (originalTransation != null) {
       _controller.text = originalTransation.id!;
       _amount = originalTransation.amount;
@@ -58,24 +52,13 @@ class _TransactionFormState extends State<TransactionForm> {
       _tags = originalTransation.tags;
       _comment = originalTransation.comment;
 
-      _selectedCategoryName.value =
-          _categories.firstWhere((category) => category.id == _categoryId).name;
+      _selectedCategoryName.value = context
+          .read<CategoryManager>()
+          .getCategoryName(originalTransation.categoryId);
       _selectedWalletName =
           context.read<WalletManager>().getWalletName(_walletId!);
     }
     super.initState();
-  }
-
-  Future<void> _loadCategories() async {
-    final manager = context.read<CategoryManager>();
-    if (manager.categories.isEmpty) await manager.fetchAllCategory();
-    _categories = manager.categories;
-  }
-
-  Future<void> _loadWallets() async {
-    final manager = context.read<WalletManager>();
-    if (manager.wallets.isEmpty) await manager.fetchAllCategory();
-    _wallets = manager.wallets;
   }
 
   @override
@@ -86,6 +69,18 @@ class _TransactionFormState extends State<TransactionForm> {
 
   @override
   Widget build(BuildContext context) {
+    Future<List<Wallet>> loadWallets() async {
+      final manager = context.read<WalletManager>();
+      if (manager.wallets.isEmpty) await manager.fetchAllCategory();
+      return manager.wallets;
+    }
+
+    Future<Set<Category>> loadCategories() async {
+      final manager = context.read<CategoryManager>();
+      if (manager.categories.isEmpty) await manager.fetchAllCategory();
+      return manager.categories;
+    }
+
     final amountController = TextEditingController(
       text: _amount == null ? '0' : _amount.toString(),
     );
@@ -107,7 +102,7 @@ class _TransactionFormState extends State<TransactionForm> {
                 children: <Widget>[
                   buildToggleSwitch(
                     _isExpense ? 0 : 1,
-                    (_) => (_isExpense = _isExpense),
+                    (_) => (_isExpense = !_isExpense),
                   ),
                   const SizedBox(height: 20),
                   // Amount,
@@ -118,8 +113,8 @@ class _TransactionFormState extends State<TransactionForm> {
 
                   const SizedBox(height: 20),
                   // Wallet
-                  FutureBuilder(
-                      future: _loadWalletsFuture,
+                  FutureBuilder<List<Wallet>>(
+                      future: loadWallets(),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -127,9 +122,19 @@ class _TransactionFormState extends State<TransactionForm> {
                               child: CircularProgressIndicator());
                         } else if (snapshot.hasError) {
                           return const Center(child: Text("Lỗi tải dữ liệu!"));
+                        } else if (snapshot.data!.isEmpty) {
+                          return buildPromptedChoiceForm([],
+                              null,
+                              null,
+                              "Wallets",
+                              _formColor,
+                              _dividerColor,
+                              (value) {},
+                              (value) {});
                         } else {
+                          final wallets = snapshot.requireData;
                           return buildPromptedChoiceForm(
-                            _wallets,
+                            wallets,
                             _walletId,
                             _selectedWalletName,
                             'Wallet',
@@ -139,8 +144,10 @@ class _TransactionFormState extends State<TransactionForm> {
                               _walletId = selectedValue;
                             },
                             (value) {
-                              final wallet =
-                                  _wallets!.firstWhere((w) => w.id == value);
+                              final wallet = wallets.firstWhere(
+                                (w) => w.id == value,
+                                orElse: () => wallets.first,
+                              );
 
                               if (!_isExpense) return null;
                               final amount = double.parse(
@@ -160,19 +167,20 @@ class _TransactionFormState extends State<TransactionForm> {
 
                   const SizedBox(height: 20),
                   // Category
-                  FutureBuilder(
-                    future: _loadCategoriesFuture,
+                  FutureBuilder<Set<Category>>(
+                    future: loadCategories(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       } else if (snapshot.hasError) {
                         return const Center(child: Text("Lỗi tải dữ liệu!"));
                       } else {
+                        final categories = snapshot.requireData;
                         return ValueListenableBuilder(
                           valueListenable: _selectedCategoryName,
                           builder: (context, value, child) {
                             return buildChoiceChipForm(
-                              _categories.toList(),
+                              categories.toList(),
                               _categoryId,
                               _selectedCategoryName.value,
                               "Category",
@@ -194,8 +202,11 @@ class _TransactionFormState extends State<TransactionForm> {
                   ),
                   const SizedBox(height: 20),
                   // DateTime
-                  buildDateTimeForm(context, _dateTime, _formColor,
-                      (dateTime) => _dateTime = dateTime),
+                  buildDateTimeForm(
+                      context: context,
+                      dateTime: _dateTime,
+                      formColor: _formColor,
+                      onDateSaved: (dateTime) => _dateTime = dateTime),
                   const SizedBox(height: 20),
                   // Comment
                   buildTextForm(_comment, "Comment", _formColor,

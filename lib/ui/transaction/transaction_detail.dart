@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:ymix/managers/category_manager.dart';
-import 'package:ymix/managers/expenses_manager.dart';
-import 'package:ymix/managers/income_manager.dart';
+import 'package:ymix/managers/transactions_manager.dart';
 import 'package:ymix/managers/wallet_manager.dart';
 
 import 'package:ymix/models/transactions.dart';
+import 'package:ymix/ui/transaction/transaction_form.dart';
 
 import '../shared/format_helper.dart';
-
-import 'package:ymix/ui/screen.dart';
+import '../shared/dialog_utils.dart';
 
 class TransactionDetail extends StatefulWidget {
   static const routeName = "/transaction_detail";
@@ -29,6 +28,7 @@ class _TransactionDetailState extends State<TransactionDetail> {
 
   @override
   Widget build(BuildContext context) {
+    final transactionManager = context.read<TransactionsManager>();
     return Scaffold(
         appBar: AppBar(
           title: const Text('Transaction detail'),
@@ -42,10 +42,9 @@ class _TransactionDetailState extends State<TransactionDetail> {
             )
           ],
         ),
-        body: FutureBuilder<Transactions?>(
-          future: context
-              .read<TransactionsManager>()
-              .getTransactionWithId(widget.transactionId),
+        body: FutureBuilder(
+          future: transactionManager
+              .getTransactions(idList: [widget.transactionId]),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -54,7 +53,7 @@ class _TransactionDetailState extends State<TransactionDetail> {
             } else if (snapshot.data == null) {
               return const Center(child: Text("No transaction"));
             } else {
-              transaction = snapshot.data!;
+              transaction = snapshot.data!.first;
               final category = context
                   .read<CategoryManager>()
                   .getCategory(transaction.categoryId);
@@ -87,15 +86,17 @@ class _TransactionDetailState extends State<TransactionDetail> {
                   //Comment
 
                   ElevatedButton.icon(
-                      onPressed: () {
-                        transaction.id!.startsWith('e')
-                            ? context
-                                .read<ExpensesManager>()
-                                .deleteTransaction(transaction.id!)
-                            : context
-                                .read<IncomeManager>()
-                                .deleteTransaction(transaction.id!);
-                        Navigator.pop(context);
+                      onPressed: () async {
+                        final confirm = await showConfirmDialog(
+                            context, 'Do you wanna delete this transaction?');
+                        if (confirm == null || !confirm) return;
+                        await transactionManager.deleteTransaction(
+                            transaction.id!,
+                            transaction.amount,
+                            transaction.dateTime);
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
                       },
                       label: const Text("DELETE",
                           style: TextStyle(color: Colors.red)),

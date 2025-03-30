@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:ymix/models/spending_limit.dart';
 
 import 'package:ymix/models/transactions.dart';
 import 'package:ymix/models/wallet.dart';
+import 'package:ymix/ui/spending_limit/spending_limit_form.dart';
 
 import './ui/screen.dart';
 import './managers/managers.dart';
@@ -19,10 +21,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.black,
+      seedColor: Colors.white,
       primary: Colors.green.shade600,
       secondary: Colors.blueGrey,
-      surface: Colors.white,
+      surface: Colors.grey.shade200,
     );
 
     final themeData = ThemeData(
@@ -38,13 +40,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (ctx) => TransactionsManager(),
-        ),
-        ChangeNotifierProvider(
-          create: (ctx) => ExpensesManager(),
-        ),
-        ChangeNotifierProvider(
-          create: (ctx) => IncomeManager.instance,
+          create: (ctx) => TransactionsManager.instance,
         ),
         ChangeNotifierProvider(
           create: (ctx) => CategoryManager.instance,
@@ -64,9 +60,9 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: themeData,
         initialRoute: "/",
-        // routes: {
-        //   TransactionForm.routeName: (context) => const TransactionForm(null),
-        // },
+        routes: {
+          ReportScreen.routeName: (context) => const ReportScreen(),
+        },
         onGenerateRoute: (settings) {
           //Transaction Form
           if (settings.name == TransactionForm.routeName) {
@@ -87,15 +83,21 @@ class MyApp extends StatelessWidget {
           }
           // Transaction List
           else if (settings.name == TransactionList.routeName) {
-            final data = settings.arguments;
-            if (data is List<String>) {
-              return MaterialPageRoute(
-                  builder: (context) => TransactionList(transactionsId: data));
-            } else {
-              return MaterialPageRoute(
-                  builder: (context) =>
-                      TransactionList(categoryId: data as String));
-            }
+            final data = settings.arguments as TransactionListAgrs;
+            return MaterialPageRoute(
+              builder: (context) => TransactionList(
+                transactionsId: data.transactionsId,
+                categoryId: data.categoryId,
+                walletId: data.walletId,
+                period: data.period,
+              ),
+            );
+          }
+          // Spending Limit Form
+          else if (settings.name == SpendingLimitForm.routeName) {
+            final limit = settings.arguments as SpendingLimit?;
+            return MaterialPageRoute(
+                builder: (context) => SpendingLimitForm(spendingLimit: limit));
           }
 
           assert(false, 'Need to implement ${settings.name}');

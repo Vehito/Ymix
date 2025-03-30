@@ -5,10 +5,17 @@ import 'package:ymix/models/transactions.dart';
 import 'package:ymix/ui/widgets/transaction_card.dart';
 
 class TransactionList extends StatefulWidget {
-  const TransactionList({super.key, this.transactionsId, this.categoryId});
+  const TransactionList(
+      {super.key,
+      this.transactionsId,
+      this.categoryId,
+      this.walletId,
+      this.period});
   static const routeName = 'transaction_list';
   final List<String>? transactionsId;
   final String? categoryId;
+  final String? walletId;
+  final DateTimeRange? period;
 
   @override
   State<TransactionList> createState() => _TransactionListState();
@@ -16,19 +23,11 @@ class TransactionList extends StatefulWidget {
 
 class _TransactionListState extends State<TransactionList> {
   Future<List<Transactions>> _loadTransaction() async {
-    final List<Transactions> transactions;
-    if (widget.transactionsId != null) {
-      transactions = await context
-          .watch<TransactionsManager>()
-          .getTransactionListWithId(widget.transactionsId!);
-    } else if (widget.categoryId != null) {
-      transactions = await context
-          .watch<TransactionsManager>()
-          .getTransactionsByCategoryId(widget.categoryId!);
-    } else {
-      transactions = [];
-    }
-    return transactions;
+    return context.watch<TransactionsManager>().getTransactions(
+        idList: widget.transactionsId,
+        categoryId: widget.categoryId,
+        walletId: widget.walletId,
+        period: widget.period);
   }
 
   @override
@@ -44,6 +43,8 @@ class _TransactionListState extends State<TransactionList> {
               return const Center(child: CircularProgressIndicator());
             } else if (snapshot.hasError) {
               return const Center(child: Text("Lỗi tải dữ liệu!"));
+            } else if (snapshot.data!.isEmpty) {
+              return const Center(child: Text("No Transaction!"));
             } else {
               final transactions = snapshot.data!;
               return ListView.builder(
@@ -59,4 +60,14 @@ class _TransactionListState extends State<TransactionList> {
           }),
     );
   }
+}
+
+class TransactionListAgrs {
+  final String? walletId;
+  final String? categoryId;
+  final List<String>? transactionsId;
+  final DateTimeRange? period;
+
+  const TransactionListAgrs(
+      {this.transactionsId, this.categoryId, this.walletId, this.period});
 }

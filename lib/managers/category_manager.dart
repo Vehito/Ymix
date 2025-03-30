@@ -23,13 +23,12 @@ class CategoryManager with ChangeNotifier {
     await _categoryService.close();
   }
 
-  Future<void> addCategory() async {
-    await _categoryService.insertCategory(Category(
-        id: "1", name: "Food", color: Colors.green, icon: Icons.food_bank));
-  }
-
   Category getCategory(String id) {
     return _categories.firstWhere((category) => category.id == id);
+  }
+
+  String getCategoryName(String id) {
+    return _categories.firstWhere((ca) => ca.id == id).name;
   }
 
   Color getColor(String id) {

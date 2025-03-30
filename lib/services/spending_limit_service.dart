@@ -35,6 +35,22 @@ class SpendingLimitService {
       status TEXT NOT NULL,
       FOREIGN KEY (categoryId) REFERENCES Categories (id)
     )''');
+
+    await db.execute('''
+      CREATE TRIGGER update_status_trigger
+      AFTER UPDATE OF currentSpending, end ON $dbName
+      FOR EACH ROW
+      BEGIN
+        UPDATE $dbName
+        SET status =
+          CASE
+            WHEN NEW.end < (strftime('%s', 'now') - strftime('%s', '2020-01-01')) / 86400 THEN 'expired'
+            WHEN NEW.currentSpending > NEW.amount THEN 'exceeded'
+            ELSE 'active'
+          END
+        WHERE id = NEW.id;
+      END;
+    ''');
   }
 
   Future<List<SpendingLimit>> fetchAllLimit() async {
@@ -62,6 +78,37 @@ class SpendingLimitService {
     }
   }
 
+  Future<List<SpendingLimit>> fetchLimitsInPeriod(
+      DateTime start, DateTime end) async {
+    final List<SpendingLimit> list = [];
+    try {
+      final db = await _database;
+      final limitModels = await db.query(dbName,
+          where: 'start <= ? AND end >= ?',
+          whereArgs: [_dateTimeToInt(start), _dateTimeToInt(end)]);
+      for (var model in limitModels) {
+        list.add(SpendingLimit.formJson(model));
+      }
+      return list;
+    } catch (e) {
+      return list;
+    }
+  }
+
+  Future<int?> updateCurrentSpendingInPeriod(
+      double amount, DateTime dateTime) async {
+    try {
+      final db = await _database;
+      return await db.rawUpdate('''
+        UPDATE $dbName
+        SET currentSpending = currentSpending + ?
+        WHERE start <= ? AND ? <= end
+      ''', [amount, _dateTimeToInt(dateTime), _dateTimeToInt(dateTime)]);
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<SpendingLimit?> addLimit(SpendingLimit limit) async {
     try {
       final db = await _database;
@@ -70,6 +117,30 @@ class SpendingLimitService {
     } catch (e) {
       return null;
     }
+  }
+
+  Future<int?> updateLimit(SpendingLimit limit) async {
+    try {
+      final db = await _database;
+      return await db.update(dbName, limit.toJson(),
+          where: 'id = ?', whereArgs: [int.parse(limit.id!)]);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<int?> deleteLimit(String id) async {
+    try {
+      final db = await _database;
+      return await db
+          .delete(dbName, where: 'id = ?', whereArgs: [int.parse(id)]);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  int _dateTimeToInt(DateTime dateTime) {
+    return dateTime.difference(DateTime(2020, 1, 1)).inDays;
   }
 
   Future<void> close() async {

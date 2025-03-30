@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:ymix/managers/transactions_manager.dart';
+import 'package:ymix/ui/screen.dart';
 
 import '../../managers/managers.dart';
 import 'package:ymix/models/category.dart';
 import 'package:ymix/models/currency.dart';
 import 'package:ymix/models/transactions.dart';
 import 'package:ymix/ui/widgets/pie_chart.dart';
-
-import './transaction_form.dart';
 
 import '../shared/build_form.dart';
 import '../shared/format_helper.dart';
@@ -49,9 +47,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   Future<void> _loadTransactions(TransactionsManager manager) async {
     _transactions = _chosenDate2.value == null
-        ? await manager.getTransactionsInDay(_chosenDate1.value, _isExpense)
-        : await manager.getTransactionInPeriod(
-            _chosenDate1.value, _chosenDate2.value!, _isExpense);
+        ? await manager.getTransactions(
+            dateTime: _chosenDate1.value, isExpense: _isExpense)
+        : await manager.getTransactions(
+            period: DateTimeRange(
+                start: _chosenDate1.value, end: _chosenDate2.value!),
+            isExpense: _isExpense);
   }
 
   Future<Map<String, double>> _getIndicatorsData(
@@ -124,40 +125,26 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                             _indicatorMap.isNotEmpty) {
                           return Column(
                             children: [
-                              PieChartSample(_indicatorMap),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
-                                children: [
-                                  Container(
-                                    decoration: const BoxDecoration(
-                                        borderRadius: BorderRadius.all(
-                                            Radius.circular(30)),
-                                        color: Colors.white),
-                                    width: 200,
-                                    height: 30,
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      '${FormatHelper.numberFormat.format(_total)}đ',
-                                      style: const TextStyle(
-                                          fontSize: 20, color: Colors.green),
-                                    ),
-                                  ),
-                                  Container(
-                                    decoration: const ShapeDecoration(
-                                        shape: CircleBorder(),
-                                        color: Colors.orangeAccent),
-                                    child: IconButton(
-                                      onPressed: () {
-                                        Navigator.pushNamed(
-                                            context, TransactionForm.routeName);
-                                      },
-                                      icon: const Icon(Icons.add),
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                ],
-                              )
+                              ValueListenableBuilder(
+                                  valueListenable: _chosenDate1,
+                                  builder: (context, value, child) =>
+                                      PieChartSample(_indicatorMap)),
+                              const SizedBox(height: 10),
+                              Container(
+                                decoration: const BoxDecoration(
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(30)),
+                                    color: Colors.white),
+                                width: 200,
+                                height: 30,
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '${FormatHelper.numberFormat.format(_total)}đ',
+                                  style: const TextStyle(
+                                      fontSize: 20, color: Colors.green),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
                             ],
                           );
                         } else if (snapshot.hasError) {
@@ -166,38 +153,22 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                           return Column(
                             children: [
                               PieChartSample(snapshot.requireData),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
-                                children: [
-                                  Container(
-                                    decoration: const BoxDecoration(
-                                        borderRadius: BorderRadius.all(
-                                            Radius.circular(30)),
-                                        color: Colors.white),
-                                    width: 200,
-                                    height: 30,
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      '${FormatHelper.numberFormat.format(_total)}đ',
-                                      style: const TextStyle(
-                                          fontSize: 20, color: Colors.green),
-                                    ),
-                                  ),
-                                  Container(
-                                    decoration: const ShapeDecoration(
-                                        shape: CircleBorder(),
-                                        color: Colors.orangeAccent),
-                                    child: IconButton(
-                                      onPressed: () => Navigator.pushNamed(
-                                          context, TransactionForm.routeName),
-                                      // .then((value) => _onRefresh()),
-                                      icon: const Icon(Icons.add),
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                ],
-                              )
+                              const SizedBox(height: 10),
+                              Container(
+                                decoration: const BoxDecoration(
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(30)),
+                                    color: Colors.white),
+                                width: 200,
+                                height: 30,
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '${FormatHelper.numberFormat.format(_total)}đ',
+                                  style: const TextStyle(
+                                      fontSize: 20, color: Colors.green),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
                             ],
                           );
                         } else {
@@ -224,9 +195,14 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) => InkWell(
                         onTap: () {
-                          Navigator.pushNamed(context, 'transaction_list',
-                              arguments: _getIdListInCategory(
-                                  _indicatorMap.keys.elementAt(index)));
+                          Navigator.pushNamed(
+                            context,
+                            'transaction_list',
+                            arguments: TransactionListAgrs(
+                              transactionsId: _getIdListInCategory(
+                                  _indicatorMap.keys.elementAt(index)),
+                            ),
+                          );
                         },
                         child: _buildCategoryCard(
                           snapshot.data!.firstWhere((category) =>
@@ -287,31 +263,30 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               }
               _updateIndicator(manager);
             }),
-            bulidDateBtn(context, (selectedDate) {
+            buildDateBtn(context, (selectedDate) {
               _chosenDate1.value = selectedDate;
               _chosenDate2.value = null;
               _updateIndicator(manager);
             }),
-            bulidPeriodBtn(
-                context, (selectedDate) => _chosenDate1.value = selectedDate,
-                (selectedDate) {
-              _chosenDate2.value = selectedDate;
-              _updateIndicator(manager);
-            }),
+            buildPeriodBtn(
+              context,
+              (period) {
+                _chosenDate1.value = period.start;
+                _chosenDate2.value = period.end;
+                _updateIndicator(manager);
+              },
+            ),
           ],
         ),
         const SizedBox(height: 10),
         ValueListenableBuilder(
           valueListenable: _chosenDate1,
-          builder: (context, value, child) => ValueListenableBuilder(
-            valueListenable: _chosenDate2,
-            builder: (context, value, child) => Text(
-              _displayDate(),
-              style: const TextStyle(
-                  fontSize: 20,
-                  color: Colors.black38,
-                  fontWeight: FontWeight.bold),
-            ),
+          builder: (context, value, child) => Text(
+            _displayDate(),
+            style: const TextStyle(
+                fontSize: 20,
+                color: Colors.black38,
+                fontWeight: FontWeight.bold),
           ),
         ),
       ],

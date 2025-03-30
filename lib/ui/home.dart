@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ymix/ui/spending_limit/spending_limit_form.dart';
 import 'screen.dart';
 
 class Home extends StatefulWidget {
@@ -56,9 +57,28 @@ class _HomeState extends State<Home> {
         backgroundColor: Colors.green.shade200,
         indicatorColor: Colors.green,
       ),
-      floatingActionButton:
-          IconButton(onPressed: () {}, icon: const Icon(Icons.add)),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.greenAccent.withAlpha(180),
+        elevation: 0,
+        shape: const CircleBorder(),
+        onPressed: _onFloatingActionButton,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     );
+  }
+
+  void _onFloatingActionButton() {
+    switch (_selectedIndex) {
+      case 0:
+        Navigator.pushNamed(context, TransactionForm.routeName);
+        break;
+      case 1:
+        Navigator.pushNamed(context, WalletForm.routeName);
+        break;
+      case 2:
+        Navigator.pushNamed(context, SpendingLimitForm.routeName);
+        break;
+    }
   }
 
   Widget _buildAppDrawer() {
@@ -68,11 +88,12 @@ class _HomeState extends State<Home> {
         children: [
           const DrawerHeader(
             decoration: BoxDecoration(color: Colors.blue),
-            child: Text('Drawer Header'),
+            child: Text('Hi User'),
           ),
           ListTile(
-            title: const Text('Item 1'),
-            onTap: () {},
+            leading: const Icon(Icons.bar_chart),
+            title: const Text('Report'),
+            onTap: () => Navigator.pushNamed(context, ReportScreen.routeName),
           ),
           ListTile(
             title: const Text('Item 2'),

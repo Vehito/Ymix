@@ -64,4 +64,14 @@ class WalletManager with ChangeNotifier {
     if (result != null) _wallets[index] = updatedWallet;
     notifyListeners();
   }
+
+  Future<void> deleteWallet(String id) async {
+    await _walletService.deleteWallet(id);
+    notifyListeners();
+  }
+
+  Future<void> changeAmount(
+      {required String id, required double amount}) async {
+    await _walletService.changeAmount(id, amount);
+  }
 }

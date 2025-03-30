@@ -23,6 +23,7 @@ dependencies:
   sqflite: ^2.4.1
   path: ^1.9.0
   collection: ^1.19.0
+  month_picker_dialog: ^6.0.2
 
 dev_dependencies:
   flutter_test:
