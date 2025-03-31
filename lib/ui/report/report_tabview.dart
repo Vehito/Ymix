@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ymix/managers/transactions_manager.dart';
 import 'package:ymix/models/transactions.dart';
+import 'package:ymix/ui/report/report_detail.dart';
 import 'package:ymix/ui/shared/build_form.dart';
 import 'package:ymix/ui/shared/format_helper.dart';
 import 'package:ymix/ui/widgets/bar_chart.dart';
@@ -70,6 +71,9 @@ class ReportTabview extends StatelessWidget {
     final transactionsManager = context.watch<TransactionsManager>();
     final List<String> titleList = [];
     final List<double> totalAmount = [];
+    final Map<String, List<Transactions>> transactionsData = {};
+    List<Transactions> transactionList1 = [];
+    List<Transactions>? transactionList2;
 
     String handleTitleIndex(DateTime dateTime) {
       switch (mode) {
@@ -92,8 +96,11 @@ class ReportTabview extends StatelessWidget {
         {required List<Transactions> transactions1,
         List<Transactions>? transactions2}) {
       final Map<String, double> data1 = {};
+      transactionList1 = transactions1;
+      transactionList2 = transactions2;
       titleList.clear();
       totalAmount.clear();
+      transactionsData.clear();
       totalAmount.add(0);
       for (var transaction in transactions1) {
         totalAmount[0] += transaction.amount;
@@ -101,8 +108,10 @@ class ReportTabview extends StatelessWidget {
         if (!titleList.contains(index)) titleList.add(index);
         if (data1.containsKey(index)) {
           data1[index] = data1[index]! + transaction.amount;
+          transactionsData[index]!.add(transaction);
         } else {
           data1[index] = transaction.amount;
+          transactionsData[index] = [transaction];
         }
       }
       if (transactions2 != null) {
@@ -239,11 +248,20 @@ class ReportTabview extends StatelessWidget {
                             dataLength,
                             (index) => Column(children: [
                               _buildListTile(
-                                amount1: data[0][index],
-                                amount2:
-                                    isExpense == null ? data[1][index] : null,
-                                title: titleList[index],
-                              ),
+                                  amount1: data[1][index],
+                                  amount2:
+                                      isExpense == null ? data[0][index] : null,
+                                  title: titleList[index],
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => ReportDetail(
+                                                transactions1: transactionList1,
+                                                transactions2: transactionList2,
+                                              )),
+                                    );
+                                  }),
                               const Divider(),
                             ]),
                           )
@@ -386,14 +404,14 @@ Widget _buildListTile(
                             ? Colors.green
                             : Colors.blueAccent)),
                 if (amount2 != null) ...[
-                  Text('${FormatHelper.numberFormat.format(amount1)}đ',
+                  Text('${FormatHelper.numberFormat.format(amount2)}đ',
                       style: const TextStyle(fontSize: 17, color: Colors.red)),
                   const SizedBox(
                     width: 70,
                     child: Divider(),
                   ),
                   Text(
-                      '${FormatHelper.numberFormat.format(amount2 - amount1)}đ',
+                      '${FormatHelper.numberFormat.format(amount1 - amount2)}đ',
                       style: const TextStyle(fontSize: 17)),
                 ],
               ],

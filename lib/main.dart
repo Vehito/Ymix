@@ -72,9 +72,12 @@ class MyApp extends StatelessWidget {
           }
           //Transaction Detail
           else if (settings.name == TransactionDetail.routeName) {
-            final transaction = settings.arguments as Transactions;
+            final data = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
-                builder: (context) => TransactionDetail(transaction.id!));
+                builder: (context) => TransactionDetail(
+                      data['transactionId'],
+                      isEdit: data['isEdit'],
+                    ));
           }
           // Wallet Form
           else if (settings.name == WalletForm.routeName) {
@@ -90,6 +93,7 @@ class MyApp extends StatelessWidget {
                 categoryId: data.categoryId,
                 walletId: data.walletId,
                 period: data.period,
+                isEdit: data.isEdit,
               ),
             );
           }

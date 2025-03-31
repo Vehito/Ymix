@@ -13,8 +13,9 @@ import '../shared/dialog_utils.dart';
 
 class TransactionDetail extends StatefulWidget {
   static const routeName = "/transaction_detail";
-  const TransactionDetail(this.transactionId, {super.key});
+  const TransactionDetail(this.transactionId, {super.key, this.isEdit = true});
   final String transactionId;
+  final bool isEdit;
 
   @override
   State<TransactionDetail> createState() => _TransactionDetailState();
@@ -29,17 +30,20 @@ class _TransactionDetailState extends State<TransactionDetail> {
   @override
   Widget build(BuildContext context) {
     final transactionManager = context.read<TransactionsManager>();
+    final isEdit = widget.isEdit;
     return Scaffold(
         appBar: AppBar(
           title: const Text('Transaction detail'),
           actions: [
-            IconButton(
-              onPressed: () => Navigator.pushNamed(
-                      context, TransactionForm.routeName,
-                      arguments: transaction)
-                  .then((_) => onRefresh()),
-              icon: const Icon(Icons.edit),
-            )
+            if (isEdit) ...[
+              IconButton(
+                onPressed: () => Navigator.pushNamed(
+                        context, TransactionForm.routeName,
+                        arguments: transaction)
+                    .then((_) => onRefresh()),
+                icon: const Icon(Icons.edit),
+              )
+            ]
           ],
         ),
         body: FutureBuilder(
@@ -85,22 +89,25 @@ class _TransactionDetailState extends State<TransactionDetail> {
                       null),
                   //Comment
 
-                  ElevatedButton.icon(
-                      onPressed: () async {
-                        final confirm = await showConfirmDialog(
-                            context, 'Do you wanna delete this transaction?');
-                        if (confirm == null || !confirm) return;
-                        await transactionManager.deleteTransaction(
-                            transaction.id!,
-                            transaction.amount,
-                            transaction.dateTime);
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                        }
-                      },
-                      label: const Text("DELETE",
-                          style: TextStyle(color: Colors.red)),
-                      icon: const Icon(Icons.remove_circle, color: Colors.red))
+                  if (isEdit) ...[
+                    ElevatedButton.icon(
+                        onPressed: () async {
+                          final confirm = await showConfirmDialog(
+                              context, 'Do you wanna delete this transaction?');
+                          if (confirm == null || !confirm) return;
+                          await transactionManager.deleteTransaction(
+                              transaction.id!,
+                              transaction.amount,
+                              transaction.dateTime);
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                          }
+                        },
+                        label: const Text("DELETE",
+                            style: TextStyle(color: Colors.red)),
+                        icon:
+                            const Icon(Icons.remove_circle, color: Colors.red))
+                  ]
                 ],
               );
             }

@@ -10,13 +10,14 @@ class TransactionList extends StatefulWidget {
       this.transactionsId,
       this.categoryId,
       this.walletId,
-      this.period});
+      this.period,
+      this.isEdit = true});
   static const routeName = 'transaction_list';
   final List<String>? transactionsId;
   final String? categoryId;
   final String? walletId;
   final DateTimeRange? period;
-
+  final bool isEdit;
   @override
   State<TransactionList> createState() => _TransactionListState();
 }
@@ -52,8 +53,10 @@ class _TransactionListState extends State<TransactionList> {
                 itemBuilder: (context, index) => TransactionCard(
                   transactions[index],
                   onTap: () => Navigator.pushNamed(
-                      context, '/transaction_detail',
-                      arguments: transactions[index]),
+                      context, '/transaction_detail', arguments: {
+                    'transactionId': transactions[index].id,
+                    'isEdit': widget.isEdit
+                  }),
                 ),
               );
             }
@@ -67,7 +70,12 @@ class TransactionListAgrs {
   final String? categoryId;
   final List<String>? transactionsId;
   final DateTimeRange? period;
+  final bool isEdit;
 
   const TransactionListAgrs(
-      {this.transactionsId, this.categoryId, this.walletId, this.period});
+      {this.transactionsId,
+      this.categoryId,
+      this.walletId,
+      this.period,
+      this.isEdit = true});
 }
