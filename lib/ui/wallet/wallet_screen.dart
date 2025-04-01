@@ -13,7 +13,7 @@ class WalletScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Future<List<Wallet>> loadWallets() async {
       final manager = context.watch<WalletManager>();
-      await manager.fetchAllCategory();
+      await manager.fetchAllWallet();
       return manager.wallets;
     }
 

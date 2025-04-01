@@ -36,6 +36,7 @@ class _BarChartSampleState extends State<BarChartSample> {
   late final int _unit;
 
   int _getUnit() {
+    if (_maxValue == 0) return 1000;
     // log10(_maxValue)
     int exponent = (log(_maxValue) / log(10)).floor();
     return pow(10, (exponent ~/ 3) * 3).toInt();

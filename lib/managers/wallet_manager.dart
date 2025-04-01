@@ -18,10 +18,10 @@ class WalletManager with ChangeNotifier {
   List<Wallet> get wallets => _wallets;
 
   Future<void> init() async {
-    if (_wallets.isEmpty) await fetchAllCategory();
+    if (_wallets.isEmpty) await fetchAllWallet();
   }
 
-  Future<void> fetchAllCategory() async {
+  Future<void> fetchAllWallet() async {
     _wallets = await _walletService.fetchAllWallet();
     await _walletService.close();
   }

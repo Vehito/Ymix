@@ -47,8 +47,8 @@ class TransactionService {
 
   Future<List<Transactions>> fetchTransactions(
       {List<String>? idList,
-      String? walletId,
-      String? categoryId,
+      List<String>? walletIds,
+      List<String>? categoryIds,
       DateTime? dateTime,
       DateTimeRange? period,
       bool? isExpense}) async {
@@ -62,13 +62,21 @@ class TransactionService {
       whereArgs = idList;
     } else {
       List<String> clauseList = [];
-      if (walletId != null) {
-        clauseList.add('walletId = ?');
-        whereArgs.add(walletId);
+      if (walletIds != null) {
+        final agrs = List.generate(
+            walletIds.length, (index) => int.parse(walletIds[index]));
+        final String placeholders =
+            List.filled(walletIds.length, '?').join(', ');
+        clauseList.add('walletId IN ($placeholders)');
+        whereArgs.addAll(agrs);
       }
-      if (categoryId != null) {
-        clauseList.add('categoryId = ?');
-        whereArgs.add(categoryId);
+      if (categoryIds != null) {
+        final agrs = List.generate(
+            categoryIds.length, (index) => int.parse(categoryIds[index]));
+        final String placeholders =
+            List.filled(categoryIds.length, '?').join(', ');
+        clauseList.add('categoryId IN ($placeholders)');
+        whereArgs.addAll(agrs);
       }
       if (isExpense != null) {
         clauseList.add('isExpense = ?');

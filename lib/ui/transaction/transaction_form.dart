@@ -71,7 +71,7 @@ class _TransactionFormState extends State<TransactionForm> {
   Widget build(BuildContext context) {
     Future<List<Wallet>> loadWallets() async {
       final manager = context.read<WalletManager>();
-      if (manager.wallets.isEmpty) await manager.fetchAllCategory();
+      if (manager.wallets.isEmpty) await manager.fetchAllWallet();
       return manager.wallets;
     }
 

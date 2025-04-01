@@ -26,8 +26,8 @@ class _TransactionListState extends State<TransactionList> {
   Future<List<Transactions>> _loadTransaction() async {
     return context.watch<TransactionsManager>().getTransactions(
         idList: widget.transactionsId,
-        categoryId: widget.categoryId,
-        walletId: widget.walletId,
+        categoryIds: widget.categoryId == null ? null : [widget.categoryId!],
+        walletIds: widget.walletId == null ? null : [widget.walletId!],
         period: widget.period);
   }
 

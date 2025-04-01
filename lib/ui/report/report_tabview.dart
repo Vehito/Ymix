@@ -2,25 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ymix/managers/transactions_manager.dart';
 import 'package:ymix/models/transactions.dart';
+import 'package:ymix/ui/report/parameters_form.dart';
 import 'package:ymix/ui/report/report_detail.dart';
-import 'package:ymix/ui/shared/build_form.dart';
 import 'package:ymix/ui/shared/format_helper.dart';
 import 'package:ymix/ui/widgets/bar_chart.dart';
 
-class ReportTabview extends StatelessWidget {
-  const ReportTabview(
-      {super.key, required this.mode, required this.isExpense, this.period});
+class ReportTabview extends StatefulWidget {
+  const ReportTabview({
+    super.key,
+    required this.mode,
+    required this.isExpense,
+  });
 
   final String mode;
   final bool? isExpense;
-  final DateTimeRange? period;
+
+  @override
+  State<ReportTabview> createState() => _ReportTabviewState();
+}
+
+class _ReportTabviewState extends State<ReportTabview> {
+  final ValueNotifier<DateTimeRange?> _period = ValueNotifier(null);
+  final ValueNotifier<List<String>?> _walletIds = ValueNotifier(null);
+  final ValueNotifier<List<String>?> _categoryIds = ValueNotifier(null);
+
+  ValueNotifier<int> combinedNotifier = ValueNotifier(0);
+
+  void updateCombinedNotifier() {
+    combinedNotifier.value++;
+  }
+
+  void setupListeners() {
+    _period.addListener(updateCombinedNotifier);
+    _walletIds.addListener(updateCombinedNotifier);
+    _categoryIds.addListener(updateCombinedNotifier);
+  }
 
   DateTimeRange _getRange() {
     final now = DateTime.now();
     final year = now.year;
     final month = now.month;
 
-    switch (mode) {
+    switch (widget.mode) {
       case 'DATE':
         return DateTimeRange(
           start: DateTime(year, month, 1),
@@ -56,7 +79,7 @@ class ReportTabview extends StatelessWidget {
   }
 
   List<String> _getIndicatorsName() {
-    switch (isExpense) {
+    switch (widget.isExpense) {
       case true:
         return ['Expense'];
       case false:
@@ -64,6 +87,22 @@ class ReportTabview extends StatelessWidget {
       case null:
         return ['Expense', 'Income'];
     }
+  }
+
+  @override
+  void initState() {
+    _period.addListener(updateCombinedNotifier);
+    _walletIds.addListener(updateCombinedNotifier);
+    _categoryIds.addListener(updateCombinedNotifier);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _period.removeListener(updateCombinedNotifier);
+    _walletIds.removeListener(updateCombinedNotifier);
+    _categoryIds.removeListener(updateCombinedNotifier);
+    super.dispose();
   }
 
   @override
@@ -76,7 +115,7 @@ class ReportTabview extends StatelessWidget {
     List<Transactions>? transactionList2;
 
     String handleTitleIndex(DateTime dateTime) {
-      switch (mode) {
+      switch (widget.mode) {
         case 'DATE':
           return FormatHelper.dayMonthFormat.format(dateTime);
         case 'MONTH':
@@ -127,18 +166,21 @@ class ReportTabview extends StatelessWidget {
             data2[index] = income.amount;
           }
         }
+        for (var title in titleList) {
+          if (!data2.containsKey(title)) data2[title] = 0;
+        }
         return [data1.values.toList(), data2.values.toList()];
       }
       return [data1.values.toList()];
     }
 
     List<Color> getColors() {
-      if (isExpense != null) return [Colors.green];
+      if (widget.isExpense != null) return [Colors.green];
       return [Colors.red, Colors.green];
     }
 
     List<Gradient> getGradients() {
-      if (isExpense != null) {
+      if (widget.isExpense != null) {
         return [
           const LinearGradient(
               colors: [Colors.blue, Colors.green],
@@ -160,129 +202,187 @@ class ReportTabview extends StatelessWidget {
     }
 
     Future<List<List<double>>> getData() async {
-      if (isExpense != null) {
+      if (widget.isExpense != null) {
         final transactions = await transactionsManager.getTransactions(
-            period: period ?? _getRange(), isExpense: isExpense);
+            period: _period.value ?? _getRange(),
+            categoryIds: _categoryIds.value,
+            walletIds: _walletIds.value,
+            isExpense: widget.isExpense);
         return handleFetchedData(transactions1: transactions);
       } else {
         final expenses = await transactionsManager.getTransactions(
-            period: _getRange(), isExpense: true);
+            period: _period.value ?? _getRange(),
+            categoryIds: _categoryIds.value,
+            walletIds: _walletIds.value,
+            isExpense: true);
         final incomes = await transactionsManager.getTransactions(
-            period: _getRange(), isExpense: false);
+            period: _period.value ?? _getRange(),
+            categoryIds: _categoryIds.value,
+            walletIds: _walletIds.value,
+            isExpense: false);
         return handleFetchedData(
             transactions1: expenses, transactions2: incomes);
       }
     }
 
+    Widget buildSummarySlot() {
+      return FutureBuilder(
+        future: getData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return const Center(child: Text("Lỗi tải dữ liệu!"));
+          } else {
+            final data = snapshot.requireData;
+            final dataListLength = data.length;
+            final dataLength = data[0].length;
+            final summaryName = widget.isExpense == null
+                ? (['expense', 'income'])
+                : widget.isExpense!
+                    ? ['expense']
+                    : ['income'];
+            const textStyle = TextStyle(color: Colors.black45, fontSize: 17);
+            return Column(
+              children: [
+                Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(color: Colors.white),
+                    child: Column(
+                      children: [
+                        BarChartSample(
+                          indicatorsDataList: data,
+                          titleList: titleList,
+                          indicatorsName: _getIndicatorsName(),
+                          colorList: getColors(),
+                          gradientList: getGradients(),
+                        ),
+                        const SizedBox(height: 10),
+                        ...List<Widget>.generate(
+                          dataListLength,
+                          (index) => Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Total ${summaryName[index]}',
+                                  style: textStyle),
+                              Text(
+                                  '${FormatHelper.numberFormat.format(totalAmount[index])}đ')
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ...List<Widget>.generate(
+                          dataListLength,
+                          (index) => Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                  'Average ${summaryName[index]}/${widget.mode.toLowerCase()}',
+                                  style: textStyle),
+                              Text(
+                                  '${dataLength == 0 ? '0' : FormatHelper.numberFormat.format(totalAmount[index] / dataLength)}đ')
+                            ],
+                          ),
+                        ),
+                      ],
+                    )),
+                const SizedBox(height: 15),
+                Container(
+                    decoration: const BoxDecoration(color: Colors.white),
+                    child: Column(
+                      children: [
+                        ...List.generate(
+                          dataLength,
+                          (index) => Column(children: [
+                            _buildListTile(
+                                amount1: data[0][index],
+                                amount2: widget.isExpense == null
+                                    ? data[1][index]
+                                    : null,
+                                title: titleList[index],
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ReportDetail(
+                                        transactions1: transactionList1,
+                                        transactions2: transactionList2,
+                                      ),
+                                    ),
+                                  );
+                                }),
+                            const Divider(),
+                          ]),
+                        )
+                      ],
+                    ))
+              ],
+            );
+          }
+        },
+      );
+    }
+
     return ListView(
       children: [
-        _buildOptionCard(
-            period: period ?? _getRange(), isCustom: mode == 'CUSTOM'),
-        const SizedBox(height: 15),
-        FutureBuilder(
-          future: getData(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return const Center(child: Text("Lỗi tải dữ liệu!"));
-            } else {
-              final data = snapshot.requireData;
-              final dataListLength = data.length;
-              final dataLength = data[0].length;
-              final summaryName = isExpense == null
-                  ? (['expense', 'income'])
-                  : isExpense!
-                      ? ['expense']
-                      : ['income'];
-              const textStyle = TextStyle(color: Colors.black45, fontSize: 17);
-              return Column(
-                children: [
-                  Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: const BoxDecoration(color: Colors.white),
-                      child: Column(
-                        children: [
-                          BarChartSample(
-                            indicatorsDataList: data,
-                            titleList: titleList,
-                            indicatorsName: _getIndicatorsName(),
-                            colorList: getColors(),
-                            gradientList: getGradients(),
-                          ),
-                          const SizedBox(height: 10),
-                          ...List<Widget>.generate(
-                            dataListLength,
-                            (index) => Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Total ${summaryName[index]}',
-                                    style: textStyle),
-                                Text(
-                                    '${FormatHelper.numberFormat.format(totalAmount[index])}đ')
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          ...List<Widget>.generate(
-                            dataListLength,
-                            (index) => Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                    'Average ${summaryName[index]}/${mode.toLowerCase()}',
-                                    style: textStyle),
-                                Text(
-                                    '${FormatHelper.numberFormat.format(totalAmount[index] / dataLength)}đ')
-                              ],
-                            ),
-                          ),
-                        ],
-                      )),
-                  const SizedBox(height: 15),
-                  Container(
-                      decoration: const BoxDecoration(color: Colors.white),
-                      child: Column(
-                        children: [
-                          ...List.generate(
-                            dataLength,
-                            (index) => Column(children: [
-                              _buildListTile(
-                                  amount1: data[1][index],
-                                  amount2:
-                                      isExpense == null ? data[0][index] : null,
-                                  title: titleList[index],
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) => ReportDetail(
-                                                transactions1: transactionList1,
-                                                transactions2: transactionList2,
-                                              )),
-                                    );
-                                  }),
-                              const Divider(),
-                            ]),
-                          )
-                        ],
-                      ))
-                ],
-              );
-            }
-          },
+        ValueListenableBuilder(
+          valueListenable: _period,
+          builder: (context, value, child) => _buildOptionCard(
+              period: _period.value ?? _getRange(),
+              isCustom: widget.mode == 'CUSTOM',
+              onTap: () async {
+                final data = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ParametersForm(
+                          mode: widget.mode,
+                          originalPeriod: _period.value ?? _getRange(),
+                          originalWalletIds: _walletIds.value,
+                          originalCategoryIds: _categoryIds.value),
+                    )) as ParametersFormOutput?;
+                if (data == null) return;
+                _period.value = data.period;
+                _walletIds.value = data.walletIds;
+                _categoryIds.value = data.categoryIds;
+              }),
         ),
+        const SizedBox(height: 15),
+        ValueListenableBuilder(
+          valueListenable: combinedNotifier,
+          builder: (context, value, child) => buildSummarySlot(),
+        )
       ],
     );
   }
 }
 
-class CurrentTabView extends StatelessWidget {
+class CurrentTabView extends StatefulWidget {
   const CurrentTabView({super.key});
+
+  @override
+  State<CurrentTabView> createState() => _CurrentTabViewState();
+}
+
+class _CurrentTabViewState extends State<CurrentTabView> {
+  List<String>? _walletIds;
+  List<String>? _categoryIds;
+  final List<double> totals = [];
 
   @override
   Widget build(BuildContext context) {
     final transactionsManager = context.watch<TransactionsManager>();
+    Future<List<Transactions>> getTransaction(
+        {required DateTimeRange period,
+        List<String>? walletIds,
+        List<String>? categoryIds,
+        bool? isExpense}) async {
+      return await transactionsManager.getTransactions(
+          period: period,
+          walletIds: walletIds,
+          categoryIds: categoryIds,
+          isExpense: isExpense);
+    }
+
     Future<double> getAmount(
         {required DateTimeRange period, bool? isExpense}) async {
       return await transactionsManager.getTotalAmountInPeriod(
@@ -290,39 +390,85 @@ class CurrentTabView extends StatelessWidget {
           isExpense: isExpense);
     }
 
-    Future<List<double>> getData() async {
-      final List<double> data = [];
+    Future<void> loadTotalList(DateTime now) async {
+      final startMonthOfQuarter =
+          now.month.remainder(3) == 0 ? now.month ~/ 3 : now.month - 2;
+      totals.add(await getAmount(
+          period: DateTimeRange(
+              start: DateTime(now.year, now.month, 1),
+              end: DateTime(now.year, now.month + 1, 0)),
+          isExpense: true));
+      totals.add(await getAmount(
+          period: DateTimeRange(
+              start: DateTime(now.year, now.month, 1),
+              end: DateTime(now.year, now.month + 1, 0)),
+          isExpense: false));
+      totals.add(await getAmount(
+          period: DateTimeRange(
+              start: DateTime(now.year, startMonthOfQuarter, 1),
+              end: DateTime(now.year, startMonthOfQuarter + 3, 0)),
+          isExpense: true));
+      totals.add(await getAmount(
+          period: DateTimeRange(
+              start: DateTime(now.year, startMonthOfQuarter, 1),
+              end: DateTime(now.year, startMonthOfQuarter + 3, 0)),
+          isExpense: false));
+      totals.add(await getAmount(
+          period: DateTimeRange(
+              start: DateTime(now.year, 1, 1), end: DateTime(now.year, 12, 31)),
+          isExpense: true));
+      totals.add(await getAmount(
+          period: DateTimeRange(
+              start: DateTime(now.year, 1, 1), end: DateTime(now.year, 12, 31)),
+          isExpense: false));
+    }
+
+    Future<List<List<Transactions>>> getData() async {
+      final List<List<Transactions>> data = [];
       final now = DateTime.now();
       final startMonthOfQuarter =
           now.month.remainder(3) == 0 ? now.month ~/ 3 : now.month - 2;
-      data.add(await getAmount(
+      data.add(await getTransaction(
           period: DateTimeRange(
               start: DateTime(now.year, now.month, 1),
               end: DateTime(now.year, now.month + 1, 0)),
+          walletIds: _walletIds,
+          categoryIds: _categoryIds,
           isExpense: true));
-      data.add(await getAmount(
+      data.add(await getTransaction(
           period: DateTimeRange(
               start: DateTime(now.year, now.month, 1),
               end: DateTime(now.year, now.month + 1, 0)),
+          walletIds: _walletIds,
+          categoryIds: _categoryIds,
           isExpense: false));
-      data.add(await getAmount(
+      data.add(await getTransaction(
           period: DateTimeRange(
               start: DateTime(now.year, startMonthOfQuarter, 1),
               end: DateTime(now.year, startMonthOfQuarter + 3, 0)),
+          walletIds: _walletIds,
+          categoryIds: _categoryIds,
           isExpense: true));
-      data.add(await getAmount(
+      data.add(await getTransaction(
           period: DateTimeRange(
               start: DateTime(now.year, startMonthOfQuarter, 1),
               end: DateTime(now.year, startMonthOfQuarter + 3, 0)),
+          walletIds: _walletIds,
+          categoryIds: _categoryIds,
           isExpense: false));
-      data.add(await getAmount(
+      data.add(await getTransaction(
           period: DateTimeRange(
               start: DateTime(now.year, 1, 1), end: DateTime(now.year, 12, 31)),
+          walletIds: _walletIds,
+          categoryIds: _categoryIds,
           isExpense: true));
-      data.add(await getAmount(
+      data.add(await getTransaction(
           period: DateTimeRange(
               start: DateTime(now.year, 1, 1), end: DateTime(now.year, 12, 31)),
+          walletIds: _walletIds,
+          categoryIds: _categoryIds,
           isExpense: false));
+      await loadTotalList(now);
       return data;
     }
 
@@ -335,8 +481,13 @@ class CurrentTabView extends StatelessWidget {
               Navigator.push(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (BuildContext context) =>
-                        const _ParametersScreen(),
+                    builder: (BuildContext context) => ParametersForm(
+                      mode: 'CURRENT',
+                      originalPeriod: DateTimeRange(
+                          start: DateTime.now(), end: DateTime.now()),
+                      originalWalletIds: _walletIds,
+                      originalCategoryIds: _categoryIds,
+                    ),
                   ));
             }),
         const SizedBox(height: 20),
@@ -357,17 +508,46 @@ class CurrentTabView extends StatelessWidget {
                 return Column(
                   children: [
                     _buildListTile(
-                        amount1: data[0],
-                        amount2: data[1],
-                        title: 'This Month'),
+                        amount1: totals[0],
+                        amount2: totals[1],
+                        title: 'This Month',
+                        onTap: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ReportDetail(
+                                        transactions1: data[0],
+                                        transactions2: data[1],
+                                      )));
+                        }),
                     const Divider(),
                     _buildListTile(
-                        amount1: data[2],
-                        amount2: data[3],
-                        title: 'This Quarter'),
+                        amount1: totals[2],
+                        amount2: totals[3],
+                        title: 'This Quarter',
+                        onTap: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ReportDetail(
+                                        transactions1: data[2],
+                                        transactions2: data[3],
+                                      )));
+                        }),
                     const Divider(),
                     _buildListTile(
-                        amount1: data[4], amount2: data[5], title: 'This Year')
+                        amount1: totals[4],
+                        amount2: totals[5],
+                        title: 'This Year',
+                        onTap: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ReportDetail(
+                                        transactions1: data[4],
+                                        transactions2: data[5],
+                                      )));
+                        })
                   ],
                 );
               }
@@ -439,31 +619,4 @@ Widget _buildOptionCard(
       trailing: IconButton(onPressed: onTap, icon: const Icon(Icons.settings)),
     ),
   );
-}
-
-class _ParametersScreen extends StatelessWidget {
-  const _ParametersScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Select parameters fo report"),
-      ),
-      body: Column(
-        children: [
-          buildDateTimeForm(
-              context: context,
-              dateTime: DateTime.now(),
-              onDateSaved: (a) {},
-              isMonth: true),
-          buildDateTimeForm(
-              context: context,
-              dateTime: DateTime.now(),
-              onDateSaved: (a) {},
-              isYear: true),
-        ],
-      ),
-    );
-  }
 }

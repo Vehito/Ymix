@@ -26,15 +26,15 @@ class TransactionsManager with ChangeNotifier {
 
   Future<List<Transactions>> getTransactions(
       {List<String>? idList,
-      String? walletId,
-      String? categoryId,
+      List<String>? walletIds,
+      List<String>? categoryIds,
       DateTime? dateTime,
       DateTimeRange? period,
       bool? isExpense}) async {
     return await _transactionService.fetchTransactions(
         idList: idList,
-        walletId: walletId,
-        categoryId: categoryId,
+        walletIds: walletIds,
+        categoryIds: categoryIds,
         dateTime: dateTime,
         period: period,
         isExpense: isExpense);
