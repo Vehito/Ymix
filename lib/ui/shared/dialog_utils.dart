@@ -73,3 +73,16 @@ class ActionButton extends StatelessWidget {
     );
   }
 }
+
+void showSnackBar(
+    {required BuildContext context,
+    required String message,
+    Color? textColor,
+    Color? color}) {
+  final snackBar = SnackBar(
+    content: Text(message, style: TextStyle(color: textColor)),
+    backgroundColor: color,
+    duration: const Duration(seconds: 5),
+  );
+  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+}

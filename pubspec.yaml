@@ -24,6 +24,10 @@ dependencies:
   path: ^1.9.0
   collection: ^1.19.0
   month_picker_dialog: ^6.0.2
+  path_provider: ^2.1.5
+  permission_handler: ^11.4.0
+  archive: ^4.0.5
+  file_picker: ^10.0.0
 
 dev_dependencies:
   flutter_test:

@@ -96,8 +96,10 @@ class _HomeState extends State<Home> {
             onTap: () => Navigator.pushNamed(context, ReportScreen.routeName),
           ),
           ListTile(
-            title: const Text('Item 2'),
-            onTap: () {},
+            leading: const Icon(Icons.dataset_linked),
+            title: const Text('Data Manager'),
+            onTap: () =>
+                Navigator.pushNamed(context, DataManagerScreen.routeName),
           ),
         ],
       ),

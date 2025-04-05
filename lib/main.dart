@@ -4,6 +4,7 @@ import 'package:ymix/models/spending_limit.dart';
 
 import 'package:ymix/models/transactions.dart';
 import 'package:ymix/models/wallet.dart';
+import 'package:ymix/ui/data_manager/data_manager_screen.dart';
 import 'package:ymix/ui/spending_limit/spending_limit_form.dart';
 
 import './ui/screen.dart';
@@ -54,6 +55,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (ctx) => SpendingLimitManager.instance,
         ),
+        ChangeNotifierProvider(
+          create: (ctx) => DataManager.instance,
+        ),
       ],
       child: MaterialApp(
         title: 'Flutter Demo',
@@ -62,6 +66,7 @@ class MyApp extends StatelessWidget {
         initialRoute: "/",
         routes: {
           ReportScreen.routeName: (context) => const ReportScreen(),
+          DataManagerScreen.routeName: (context) => const DataManagerScreen(),
         },
         onGenerateRoute: (settings) {
           //Transaction Form

@@ -29,6 +29,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   late List<Transactions> _transactions;
   Map<String, double> _indicatorMap = {};
   late final Currency currency;
+  late final Future<Set<Category>> _categoryFuture;
 
   String _displayDate() {
     if (_chosenDate2.value != null) {
@@ -68,14 +69,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     return _indicatorMap;
   }
 
-  Future<void> _onRefresh() async {
-    setState(() {});
-  }
+  // Future<void> _onRefresh(TransactionsManager manager) async {
+  //   await _updateIndicator(manager);
+  // }
 
-  void _updateIndicator(TransactionsManager manager) {
-    setState(() {
-      _getIndicatorsData(manager);
-    });
+  Future<void> _updateIndicator(TransactionsManager manager) async {
+    await _getIndicatorsData(manager);
+    setState(() {});
   }
 
   List<String> _getIdListInCategory(String categoryId) {
@@ -92,6 +92,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   void initState() {
     _chosenDate1.value = _now;
     super.initState();
+    _categoryFuture = _loadCategories();
   }
 
   @override
@@ -103,7 +104,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   Widget build(BuildContext context) {
     final transactionManager = context.watch<TransactionsManager>();
     return RefreshIndicator(
-      onRefresh: _onRefresh,
+      onRefresh: () async => await _updateIndicator(transactionManager),
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
@@ -180,7 +181,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 )),
           ),
           FutureBuilder<Set<Category>>(
-              future: _loadCategories(),
+              future: _categoryFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const SliverToBoxAdapter(
