@@ -27,7 +27,19 @@ class DataManagerScreen extends StatelessWidget {
                       showSnackBar(message: message, context: context);
                     }
                   },
-                  icon: const Icon(Icons.archive)))
+                  icon: const Icon(Icons.archive))),
+          _buildListTile(
+              title: 'Import database from zip file',
+              trailing: IconButton(
+                  onPressed: () async {
+                    final message = await context
+                        .read<DataManager>()
+                        .importDataBaseFromZipFile();
+                    if (context.mounted) {
+                      showSnackBar(context: context, message: message);
+                    }
+                  },
+                  icon: const Icon(Icons.download)))
         ],
       ),
     );

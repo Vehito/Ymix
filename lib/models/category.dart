@@ -5,21 +5,25 @@ class Category {
   final String _name;
   final Color _color;
   final IconData _icon;
+  final bool? _isExpense;
 
-  Category({
-    String? id,
-    required String name,
-    required Color color,
-    required IconData icon,
-  })  : _id = id,
+  Category(
+      {String? id,
+      required String name,
+      required Color color,
+      required IconData icon,
+      bool? isExpense})
+      : _id = id,
         _name = name,
         _color = color,
+        _isExpense = isExpense,
         _icon = icon;
 
   String? get id => _id;
   String get name => _name;
   Color get color => _color;
   IconData get icon => _icon;
+  bool? get isExpense => _isExpense;
 
   Category copyWith({
     String? id,
@@ -52,6 +56,7 @@ class Category {
         'name': _name,
         'color': _colorToHex(_color),
         'icon': _icon.codePoint,
+        'isExpense': _isExpense! ? 1 : 0
       };
 
   factory Category.formJson(Map<String, dynamic> json) => Category(
@@ -59,5 +64,6 @@ class Category {
         name: json['name'],
         color: Color(json['color']),
         icon: IconData(json['icon'], fontFamily: "MaterialIcons"),
+        isExpense: json['isExpense'] == 1 ? true : false,
       );
 }

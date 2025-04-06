@@ -29,7 +29,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   late List<Transactions> _transactions;
   Map<String, double> _indicatorMap = {};
   late final Currency currency;
-  late final Future<Set<Category>> _categoryFuture;
 
   String _displayDate() {
     if (_chosenDate2.value != null) {
@@ -92,7 +91,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   void initState() {
     _chosenDate1.value = _now;
     super.initState();
-    _categoryFuture = _loadCategories();
   }
 
   @override
@@ -181,7 +179,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 )),
           ),
           FutureBuilder<Set<Category>>(
-              future: _categoryFuture,
+              future: _loadCategories(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const SliverToBoxAdapter(

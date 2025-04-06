@@ -1,6 +1,6 @@
 # Niên luận Cơ sở/Chuyên ngành
 
-**Học kỳ**: 3, **Năm học**: 2024-2025
+**Học kỳ**: 2, **Năm học**: 2024-2025
 
 **Mã học phần**: CT466
 

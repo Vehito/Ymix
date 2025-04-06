@@ -11,4 +11,8 @@ class DataManager with ChangeNotifier {
   Future<String> exportDatabaseToDevice() async {
     return await _dataService.exportDatabase();
   }
+
+  Future<String> importDataBaseFromZipFile() async {
+    return await _dataService.importZipDB();
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ymix/managers/transactions_manager.dart';
 import 'package:ymix/models/transactions.dart';
+import 'package:ymix/ui/shared/dialog_utils.dart';
 import 'package:ymix/ui/widgets/transaction_card.dart';
 
 class TransactionList extends StatefulWidget {
@@ -46,6 +47,13 @@ class _TransactionListState extends State<TransactionList> {
               return const Center(child: Text("Lỗi tải dữ liệu!"));
             } else if (snapshot.data!.isEmpty) {
               return const Center(child: Text("No Transaction!"));
+            } else if (widget.isEdit) {
+              final transactions = snapshot.data!;
+              return ListView.builder(
+                itemCount: transactions.length,
+                itemBuilder: (context, index) =>
+                    _buildCard(context, transactions[index]),
+              );
             } else {
               final transactions = snapshot.data!;
               return ListView.builder(
@@ -61,6 +69,34 @@ class _TransactionListState extends State<TransactionList> {
               );
             }
           }),
+    );
+  }
+
+  Widget _buildCard(BuildContext context, Transactions transaction) {
+    return Dismissible(
+      key: ValueKey(transaction.id!),
+      background: Container(
+        color: Colors.red,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
+        child: const Icon(Icons.delete, color: Colors.white, size: 40),
+      ),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) =>
+          showConfirmDialog(context, 'Do you wanna remove this transaction?'),
+      onDismissed: (direction) async => await context
+          .read<TransactionsManager>()
+          .deleteTransaction(
+              transaction.id!, transaction.amount, transaction.dateTime),
+      child: TransactionCard(
+        transaction,
+        onTap: () => Navigator.pushNamed(context, '/transaction_detail',
+            arguments: {
+              'transactionId': transaction.id,
+              'isEdit': widget.isEdit
+            }),
+      ),
     );
   }
 }

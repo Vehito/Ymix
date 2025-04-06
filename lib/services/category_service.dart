@@ -26,7 +26,8 @@ class CategoryService {
         id TEXT PRIMARY KEY NOT NULL,
         name TEXT NOT NULL,
         color INTEGER NOT NULL,
-        icon INTEGER NOT NULL
+        icon INTEGER NOT NULL,
+        isExpense INTERGER NOT NULL
       )''');
 
     var batch = db.batch();
@@ -36,7 +37,8 @@ class CategoryService {
                 id: "1",
                 name: "Food",
                 color: Colors.green,
-                icon: Icons.food_bank)
+                icon: Icons.food_bank,
+                isExpense: true)
             .toJson());
 
     batch.insert(
@@ -45,12 +47,63 @@ class CategoryService {
                 id: '2',
                 name: "Entertainment",
                 color: Colors.red,
-                icon: Icons.music_note)
+                icon: Icons.music_note,
+                isExpense: true)
             .toJson());
 
     batch.insert(
         'Categories',
-        Category(id: '3', name: "Travel", color: Colors.blue, icon: Icons.map)
+        Category(
+                id: '3',
+                name: "Travel",
+                color: Colors.blue,
+                icon: Icons.map,
+                isExpense: true)
+            .toJson());
+    batch.insert(
+        'Categories',
+        Category(
+                id: '4',
+                name: "Gaming",
+                color: Colors.pink,
+                icon: Icons.games,
+                isExpense: true)
+            .toJson());
+    batch.insert(
+        'Categories',
+        Category(
+                id: '5',
+                name: "Job",
+                color: Colors.yellow,
+                icon: Icons.work,
+                isExpense: false)
+            .toJson());
+    batch.insert(
+        'Categories',
+        Category(
+                id: '6',
+                name: "Gift",
+                color: Colors.purple,
+                icon: Icons.card_giftcard,
+                isExpense: false)
+            .toJson());
+    batch.insert(
+        'Categories',
+        Category(
+                id: '7',
+                name: "Interest",
+                color: Colors.red,
+                icon: Icons.savings,
+                isExpense: false)
+            .toJson());
+    batch.insert(
+        'Categories',
+        Category(
+                id: '8',
+                name: "Other",
+                color: Colors.grey,
+                icon: Icons.help,
+                isExpense: false)
             .toJson());
 
     await batch.commit();

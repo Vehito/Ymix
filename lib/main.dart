@@ -4,7 +4,6 @@ import 'package:ymix/models/spending_limit.dart';
 
 import 'package:ymix/models/transactions.dart';
 import 'package:ymix/models/wallet.dart';
-import 'package:ymix/ui/data_manager/data_manager_screen.dart';
 import 'package:ymix/ui/spending_limit/spending_limit_form.dart';
 
 import './ui/screen.dart';
