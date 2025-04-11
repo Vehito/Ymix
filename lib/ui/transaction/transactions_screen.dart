@@ -29,6 +29,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   late List<Transactions> _transactions;
   Map<String, double> _indicatorMap = {};
   late final Currency currency;
+  List<Category> categories = [];
 
   String _displayDate() {
     if (_chosenDate2.value != null) {
@@ -37,12 +38,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     return FormatHelper.dateFormat.format(_chosenDate1.value);
   }
 
-  Future<Set<Category>> _loadCategories() async {
+  Future<void> _loadCategories() async {
     final manager = context.read<CategoryManager>();
     if (manager.categories.isEmpty) {
       await manager.fetchAllCategory();
     }
-    return manager.categories;
+    categories = manager.categories.toList();
   }
 
   Future<void> _loadTransactions(TransactionsManager manager) async {
@@ -106,115 +107,56 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-            child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.green.shade200,
-                  borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(20),
-                      bottomRight: Radius.circular(20)),
-                ),
-                child: Column(
-                  children: [
-                    _bulidHeader(transactionManager),
-                    FutureBuilder(
-                      future: _getIndicatorsData(transactionManager),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                                ConnectionState.waiting &&
-                            _indicatorMap.isNotEmpty) {
-                          return Column(
-                            children: [
-                              ValueListenableBuilder(
-                                  valueListenable: _chosenDate1,
-                                  builder: (context, value, child) =>
-                                      PieChartSample(_indicatorMap)),
-                              const SizedBox(height: 10),
-                              Container(
-                                decoration: const BoxDecoration(
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(30)),
-                                    color: Colors.white),
-                                width: 200,
-                                height: 30,
-                                alignment: Alignment.center,
-                                child: Text(
-                                  '${FormatHelper.numberFormat.format(_total)}đ',
-                                  style: const TextStyle(
-                                      fontSize: 20, color: Colors.green),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                            ],
-                          );
-                        } else if (snapshot.hasError) {
-                          return Text('Lỗi: ${snapshot.error}');
-                        } else if (snapshot.hasData) {
-                          return Column(
-                            children: [
-                              PieChartSample(snapshot.requireData),
-                              const SizedBox(height: 10),
-                              Container(
-                                decoration: const BoxDecoration(
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(30)),
-                                    color: Colors.white),
-                                width: 200,
-                                height: 30,
-                                alignment: Alignment.center,
-                                child: Text(
-                                  '${FormatHelper.numberFormat.format(_total)}đ',
-                                  style: const TextStyle(
-                                      fontSize: 20, color: Colors.green),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                            ],
-                          );
-                        } else {
-                          return const CircularProgressIndicator();
-                        }
-                      },
-                    ),
-                  ],
-                )),
-          ),
-          FutureBuilder<Set<Category>>(
-              future: _loadCategories(),
+            child: FutureBuilder(
+              future: _getIndicatorsData(transactionManager),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SliverToBoxAdapter(
-                    child: Center(child: CircularProgressIndicator()),
-                  );
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    _indicatorMap.isNotEmpty) {
+                  return _buildSummarySlot(_indicatorMap, transactionManager);
                 } else if (snapshot.hasError) {
-                  return const SliverToBoxAdapter(
-                    child: Center(child: Text("Lỗi tải dữ liệu!")),
-                  );
+                  return Text('Lỗi: ${snapshot.error}');
+                } else if (snapshot.hasData) {
+                  return _buildSummarySlot(
+                      snapshot.requireData, transactionManager);
                 } else {
-                  return SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => InkWell(
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            'transaction_list',
-                            arguments: TransactionListAgrs(
-                              transactionsId: _getIdListInCategory(
-                                  _indicatorMap.keys.elementAt(index)),
-                            ),
-                          );
-                        },
-                        child: _buildCategoryCard(
-                          snapshot.data!.firstWhere((category) =>
-                              category.id ==
-                              _indicatorMap.keys.elementAt(index)),
-                          _indicatorMap.values.elementAt(index),
-                        ),
-                      ),
-                      childCount: _indicatorMap.length,
-                    ),
-                  );
+                  return const CircularProgressIndicator();
                 }
-              }),
+              },
+            ),
+          ),
+          FutureBuilder(
+            future: _loadCategories(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SliverToBoxAdapter(
+                  child: CircularProgressIndicator(),
+                );
+              } else {
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          'transaction_list',
+                          arguments: TransactionListAgrs(
+                            transactionsId: _getIdListInCategory(
+                                _indicatorMap.keys.elementAt(index)),
+                          ),
+                        );
+                      },
+                      child: _buildCategoryCard(
+                        categories.firstWhere((category) =>
+                            category.id == _indicatorMap.keys.elementAt(index)),
+                        _indicatorMap.values.elementAt(index),
+                      ),
+                    ),
+                    childCount: _indicatorMap.length,
+                  ),
+                );
+              }
+            },
+          )
         ],
       ),
     );
@@ -290,6 +232,38 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildSummarySlot(
+      Map<String, double> indicatorMap, TransactionsManager manager) {
+    return Container(
+        decoration: BoxDecoration(
+          color: Colors.green.shade200,
+          borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(20)),
+        ),
+        child: Column(children: [
+          _bulidHeader(manager),
+          ValueListenableBuilder(
+              valueListenable: _chosenDate1,
+              builder: (context, value, child) =>
+                  PieChartSample(_indicatorMap)),
+          const SizedBox(height: 10),
+          Container(
+            decoration: const BoxDecoration(
+                borderRadius: BorderRadius.all(Radius.circular(30)),
+                color: Colors.white),
+            width: 200,
+            height: 30,
+            alignment: Alignment.center,
+            child: Text(
+              '${FormatHelper.numberFormat.format(_total)}đ',
+              style: const TextStyle(fontSize: 20, color: Colors.green),
+            ),
+          ),
+          const SizedBox(height: 10)
+        ]));
   }
 
   Widget _buildCategoryCard(Category category, double amount) {

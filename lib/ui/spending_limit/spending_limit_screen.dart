@@ -222,7 +222,8 @@ class _SpendingLimitScreenState extends State<SpendingLimitScreen> {
                     context, TransactionList.routeName,
                     arguments: TransactionListAgrs(
                         period:
-                            DateTimeRange(start: limit.start, end: limit.end))),
+                            DateTimeRange(start: limit.start, end: limit.end),
+                        isExpense: true)),
                 child: const Text("Transaction History"),
               ),
             ],

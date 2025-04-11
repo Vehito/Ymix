@@ -111,8 +111,6 @@ class _ReportTabviewState extends State<ReportTabview> {
     final List<String> titleList = [];
     final List<double> totalAmount = [];
     final Map<String, List<Transactions>> transactionsData = {};
-    List<Transactions> transactionList1 = [];
-    List<Transactions>? transactionList2;
 
     String handleTitleIndex(DateTime dateTime) {
       switch (widget.mode) {
@@ -135,8 +133,7 @@ class _ReportTabviewState extends State<ReportTabview> {
         {required List<Transactions> transactions1,
         List<Transactions>? transactions2}) {
       final Map<String, double> data1 = {};
-      transactionList1 = transactions1;
-      transactionList2 = transactions2;
+
       titleList.clear();
       totalAmount.clear();
       transactionsData.clear();
@@ -147,10 +144,10 @@ class _ReportTabviewState extends State<ReportTabview> {
         if (!titleList.contains(index)) titleList.add(index);
         if (data1.containsKey(index)) {
           data1[index] = data1[index]! + transaction.amount;
-          transactionsData[index]!.add(transaction);
+          transactionsData['e$index']!.add(transaction);
         } else {
           data1[index] = transaction.amount;
-          transactionsData[index] = [transaction];
+          transactionsData['e$index'] = [transaction];
         }
       }
       if (transactions2 != null) {
@@ -162,8 +159,10 @@ class _ReportTabviewState extends State<ReportTabview> {
           if (!titleList.contains(index)) titleList.add(index);
           if (data2.containsKey(index)) {
             data2[index] = data2[index]! + income.amount;
+            transactionsData['i$index']!.add(income);
           } else {
             data2[index] = income.amount;
+            transactionsData['i$index'] = [income];
           }
         }
         for (var title in titleList) {
@@ -305,8 +304,10 @@ class _ReportTabviewState extends State<ReportTabview> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => ReportDetail(
-                                        transactions1: transactionList1,
-                                        transactions2: transactionList2,
+                                        transactions1: transactionsData[
+                                            'e${titleList[index]}']!,
+                                        transactions2: transactionsData[
+                                            'i${titleList[index]}'],
                                       ),
                                     ),
                                   );
@@ -364,9 +365,32 @@ class CurrentTabView extends StatefulWidget {
 }
 
 class _CurrentTabViewState extends State<CurrentTabView> {
-  List<String>? _walletIds;
-  List<String>? _categoryIds;
-  final List<double> totals = [];
+  final ValueNotifier<List<String>?> _walletIds = ValueNotifier(null);
+  final ValueNotifier<List<String>?> _categoryIds = ValueNotifier(null);
+  final ValueNotifier<int> _combine = ValueNotifier(0);
+  final List<double> totals = [0, 0, 0, 0, 0, 0];
+
+  void updateCombinedNotifier() {
+    _combine.value++;
+  }
+
+  void setupListeners() {
+    _walletIds.addListener(updateCombinedNotifier);
+    _categoryIds.addListener(updateCombinedNotifier);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    setupListeners();
+  }
+
+  @override
+  void dispose() {
+    _walletIds.removeListener(updateCombinedNotifier);
+    _categoryIds.removeListener(updateCombinedNotifier);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -384,42 +408,58 @@ class _CurrentTabViewState extends State<CurrentTabView> {
     }
 
     Future<double> getAmount(
-        {required DateTimeRange period, bool? isExpense}) async {
+        {required DateTimeRange period,
+        bool? isExpense,
+        List<String>? walletIds,
+        List<String>? categoryIds}) async {
       return await transactionsManager.getTotalAmountInPeriod(
           period.start, period.end,
-          isExpense: isExpense);
+          walletIds: walletIds, categoryIds: categoryIds, isExpense: isExpense);
     }
 
     Future<void> loadTotalList(DateTime now) async {
       final startMonthOfQuarter =
           now.month.remainder(3) == 0 ? now.month ~/ 3 : now.month - 2;
+      totals.clear();
       totals.add(await getAmount(
           period: DateTimeRange(
               start: DateTime(now.year, now.month, 1),
               end: DateTime(now.year, now.month + 1, 0)),
+          walletIds: _walletIds.value,
+          categoryIds: _categoryIds.value,
           isExpense: true));
       totals.add(await getAmount(
           period: DateTimeRange(
               start: DateTime(now.year, now.month, 1),
               end: DateTime(now.year, now.month + 1, 0)),
+          walletIds: _walletIds.value,
+          categoryIds: _categoryIds.value,
           isExpense: false));
       totals.add(await getAmount(
           period: DateTimeRange(
               start: DateTime(now.year, startMonthOfQuarter, 1),
               end: DateTime(now.year, startMonthOfQuarter + 3, 0)),
+          walletIds: _walletIds.value,
+          categoryIds: _categoryIds.value,
           isExpense: true));
       totals.add(await getAmount(
           period: DateTimeRange(
               start: DateTime(now.year, startMonthOfQuarter, 1),
               end: DateTime(now.year, startMonthOfQuarter + 3, 0)),
+          walletIds: _walletIds.value,
+          categoryIds: _categoryIds.value,
           isExpense: false));
       totals.add(await getAmount(
           period: DateTimeRange(
               start: DateTime(now.year, 1, 1), end: DateTime(now.year, 12, 31)),
+          walletIds: _walletIds.value,
+          categoryIds: _categoryIds.value,
           isExpense: true));
       totals.add(await getAmount(
           period: DateTimeRange(
               start: DateTime(now.year, 1, 1), end: DateTime(now.year, 12, 31)),
+          walletIds: _walletIds.value,
+          categoryIds: _categoryIds.value,
           isExpense: false));
     }
 
@@ -432,41 +472,41 @@ class _CurrentTabViewState extends State<CurrentTabView> {
           period: DateTimeRange(
               start: DateTime(now.year, now.month, 1),
               end: DateTime(now.year, now.month + 1, 0)),
-          walletIds: _walletIds,
-          categoryIds: _categoryIds,
+          walletIds: _walletIds.value,
+          categoryIds: _categoryIds.value,
           isExpense: true));
       data.add(await getTransaction(
           period: DateTimeRange(
               start: DateTime(now.year, now.month, 1),
               end: DateTime(now.year, now.month + 1, 0)),
-          walletIds: _walletIds,
-          categoryIds: _categoryIds,
+          walletIds: _walletIds.value,
+          categoryIds: _categoryIds.value,
           isExpense: false));
       data.add(await getTransaction(
           period: DateTimeRange(
               start: DateTime(now.year, startMonthOfQuarter, 1),
               end: DateTime(now.year, startMonthOfQuarter + 3, 0)),
-          walletIds: _walletIds,
-          categoryIds: _categoryIds,
+          walletIds: _walletIds.value,
+          categoryIds: _categoryIds.value,
           isExpense: true));
       data.add(await getTransaction(
           period: DateTimeRange(
               start: DateTime(now.year, startMonthOfQuarter, 1),
               end: DateTime(now.year, startMonthOfQuarter + 3, 0)),
-          walletIds: _walletIds,
-          categoryIds: _categoryIds,
+          walletIds: _walletIds.value,
+          categoryIds: _categoryIds.value,
           isExpense: false));
       data.add(await getTransaction(
           period: DateTimeRange(
               start: DateTime(now.year, 1, 1), end: DateTime(now.year, 12, 31)),
-          walletIds: _walletIds,
-          categoryIds: _categoryIds,
+          walletIds: _walletIds.value,
+          categoryIds: _categoryIds.value,
           isExpense: true));
       data.add(await getTransaction(
           period: DateTimeRange(
               start: DateTime(now.year, 1, 1), end: DateTime(now.year, 12, 31)),
-          walletIds: _walletIds,
-          categoryIds: _categoryIds,
+          walletIds: _walletIds.value,
+          categoryIds: _categoryIds.value,
           isExpense: false));
       await loadTotalList(now);
       return data;
@@ -477,83 +517,90 @@ class _CurrentTabViewState extends State<CurrentTabView> {
         _buildOptionCard(
             period: DateTimeRange(start: DateTime.now(), end: DateTime.now()),
             isCustom: false,
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              final data = await Navigator.push(
                   context,
-                  MaterialPageRoute<void>(
+                  MaterialPageRoute(
                     builder: (BuildContext context) => ParametersForm(
                       mode: 'CURRENT',
                       originalPeriod: DateTimeRange(
                           start: DateTime.now(), end: DateTime.now()),
-                      originalWalletIds: _walletIds,
-                      originalCategoryIds: _categoryIds,
+                      originalWalletIds: _walletIds.value,
+                      originalCategoryIds: _categoryIds.value,
                     ),
-                  ));
+                  )) as ParametersFormOutput?;
+              if (data == null) return;
+              _walletIds.value = data.walletIds;
+              _categoryIds.value = data.categoryIds;
             }),
         const SizedBox(height: 20),
         Container(
-          decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.black26),
-              borderRadius: const BorderRadius.all(Radius.circular(15))),
-          child: FutureBuilder(
-            future: getData(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return const Center(child: Text("Lỗi tải dữ liệu!"));
-              } else {
-                final data = snapshot.requireData;
-                return Column(
-                  children: [
-                    _buildListTile(
-                        amount1: totals[0],
-                        amount2: totals[1],
-                        title: 'This Month',
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => ReportDetail(
-                                        transactions1: data[0],
-                                        transactions2: data[1],
-                                      )));
-                        }),
-                    const Divider(),
-                    _buildListTile(
-                        amount1: totals[2],
-                        amount2: totals[3],
-                        title: 'This Quarter',
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => ReportDetail(
-                                        transactions1: data[2],
-                                        transactions2: data[3],
-                                      )));
-                        }),
-                    const Divider(),
-                    _buildListTile(
-                        amount1: totals[4],
-                        amount2: totals[5],
-                        title: 'This Year',
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => ReportDetail(
-                                        transactions1: data[4],
-                                        transactions2: data[5],
-                                      )));
-                        })
-                  ],
+            decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.black26),
+                borderRadius: const BorderRadius.all(Radius.circular(15))),
+            child: ValueListenableBuilder(
+              valueListenable: _combine,
+              builder: (context, value, child) {
+                return FutureBuilder(
+                  future: getData(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return const Center(child: Text("Lỗi tải dữ liệu!"));
+                    } else {
+                      final data = snapshot.requireData;
+                      return Column(
+                        children: [
+                          _buildListTile(
+                              amount1: totals[0],
+                              amount2: totals[1],
+                              title: 'This Month',
+                              onTap: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => ReportDetail(
+                                              transactions1: data[0],
+                                              transactions2: data[1],
+                                            )));
+                              }),
+                          const Divider(),
+                          _buildListTile(
+                              amount1: totals[2],
+                              amount2: totals[3],
+                              title: 'This Quarter',
+                              onTap: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => ReportDetail(
+                                              transactions1: data[2],
+                                              transactions2: data[3],
+                                            )));
+                              }),
+                          const Divider(),
+                          _buildListTile(
+                              amount1: totals[4],
+                              amount2: totals[5],
+                              title: 'This Year',
+                              onTap: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => ReportDetail(
+                                              transactions1: data[4],
+                                              transactions2: data[5],
+                                            )));
+                              })
+                        ],
+                      );
+                    }
+                  },
                 );
-              }
-            },
-          ),
-        )
+              },
+            ))
       ],
     );
   }
@@ -580,18 +627,18 @@ Widget _buildListTile(
                 Text('${FormatHelper.numberFormat.format(amount1)}đ',
                     style: TextStyle(
                         fontSize: 17,
-                        color: amount2 != null
-                            ? Colors.green
-                            : Colors.blueAccent)),
+                        color:
+                            amount2 != null ? Colors.red : Colors.blueAccent)),
                 if (amount2 != null) ...[
                   Text('${FormatHelper.numberFormat.format(amount2)}đ',
-                      style: const TextStyle(fontSize: 17, color: Colors.red)),
+                      style:
+                          const TextStyle(fontSize: 17, color: Colors.green)),
                   const SizedBox(
                     width: 70,
                     child: Divider(),
                   ),
                   Text(
-                      '${FormatHelper.numberFormat.format(amount1 - amount2)}đ',
+                      '${FormatHelper.numberFormat.format(amount2 - amount1)}đ',
                       style: const TextStyle(fontSize: 17)),
                 ],
               ],

@@ -12,13 +12,15 @@ class TransactionList extends StatefulWidget {
       this.categoryId,
       this.walletId,
       this.period,
-      this.isEdit = true});
+      this.isEdit = true,
+      this.isExpense});
   static const routeName = 'transaction_list';
   final List<String>? transactionsId;
   final String? categoryId;
   final String? walletId;
   final DateTimeRange? period;
   final bool isEdit;
+  final bool? isExpense;
   @override
   State<TransactionList> createState() => _TransactionListState();
 }
@@ -29,7 +31,8 @@ class _TransactionListState extends State<TransactionList> {
         idList: widget.transactionsId,
         categoryIds: widget.categoryId == null ? null : [widget.categoryId!],
         walletIds: widget.walletId == null ? null : [widget.walletId!],
-        period: widget.period);
+        period: widget.period,
+        isExpense: widget.isExpense);
   }
 
   @override
@@ -107,11 +110,13 @@ class TransactionListAgrs {
   final List<String>? transactionsId;
   final DateTimeRange? period;
   final bool isEdit;
+  final bool? isExpense;
 
   const TransactionListAgrs(
       {this.transactionsId,
       this.categoryId,
       this.walletId,
       this.period,
-      this.isEdit = true});
+      this.isEdit = true,
+      this.isExpense});
 }

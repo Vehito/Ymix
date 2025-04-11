@@ -139,7 +139,9 @@ class TransactionService {
   }
 
   Future<double> getTotalAmountInPeriod(DateTime start, DateTime end,
-      {bool? isExpense, String? categoryId, String? walletId}) async {
+      {bool? isExpense,
+      List<String>? categoryIds,
+      List<String>? walletIds}) async {
     try {
       final db = await _database;
       String whereClause =
@@ -150,13 +152,21 @@ class TransactionService {
         whereClause += ' AND isExpense = ?';
         whereArgs.add(isExpense ? 1 : 0);
       }
-      if (categoryId != null) {
-        whereClause += ' AND categoryId = ?';
-        whereArgs.add(categoryId);
+      if (categoryIds != null) {
+        final agrs = List.generate(
+            categoryIds.length, (index) => int.parse(categoryIds[index]));
+        final String placeholders =
+            List.filled(categoryIds.length, '?').join(', ');
+        whereClause += ' AND categoryId IN ($placeholders)';
+        whereArgs.addAll(agrs);
       }
-      if (walletId != null) {
-        whereClause += ' AND walletId = ?';
-        whereArgs.add(walletId);
+      if (walletIds != null) {
+        final agrs = List.generate(
+            walletIds.length, (index) => int.parse(walletIds[index]));
+        final String placeholders =
+            List.filled(walletIds.length, '?').join(', ');
+        whereClause += ' AND walletId IN ($placeholders)';
+        whereArgs.addAll(agrs);
       }
 
       final json = await db.rawQuery(whereClause, whereArgs);

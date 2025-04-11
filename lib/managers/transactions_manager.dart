@@ -41,9 +41,9 @@ class TransactionsManager with ChangeNotifier {
   }
 
   Future<double> getTotalAmountInPeriod(DateTime start, DateTime end,
-      {bool? isExpense, String? categoryId, String? walletId}) async {
+      {bool? isExpense, List<String>? categoryIds, List<String>? walletIds}) async {
     return await _transactionService.getTotalAmountInPeriod(start, end,
-        isExpense: isExpense, categoryId: categoryId, walletId: walletId);
+        isExpense: isExpense, categoryIds: categoryIds, walletIds: walletIds);
   }
 
   Future<void> addTransaction(

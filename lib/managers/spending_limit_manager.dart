@@ -44,7 +44,7 @@ class SpendingLimitManager with ChangeNotifier {
     if (isSync) {
       currentSpending = await TransactionService.instance
           .getTotalAmountInPeriod(start, end,
-              isExpense: true, categoryId: categoryId);
+              isExpense: true, categoryIds: [categoryId]);
     }
     if (currentSpending > amount) status = 'exceeded';
     if (end.isBefore(DateTime.now())) status = 'expired';
@@ -65,7 +65,7 @@ class SpendingLimitManager with ChangeNotifier {
     if (limit.categoryId != oldCategoryId) {
       final currentSpending = await TransactionService.instance
           .getTotalAmountInPeriod(limit.start, limit.end,
-              isExpense: true, categoryId: limit.categoryId);
+              isExpense: true, categoryIds: [limit.categoryId]);
       limit = limit.copyWith(currentSpending: currentSpending);
     }
     await _spendingLimitService.updateLimit(limit);
