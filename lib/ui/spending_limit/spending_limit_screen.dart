@@ -223,6 +223,7 @@ class _SpendingLimitScreenState extends State<SpendingLimitScreen> {
                     arguments: TransactionListAgrs(
                         period:
                             DateTimeRange(start: limit.start, end: limit.end),
+                        categoryId: category.id,
                         isExpense: true)),
                 child: const Text("Transaction History"),
               ),
